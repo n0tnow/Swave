@@ -18,6 +18,7 @@
     "@mui/x-charts": "^8.5.3",
     "@mui/x-data-grid": "^8.5.3",
     "@stellar/freighter-api": "^4.1.0",
+    "@stellar/stellar-sdk": "^12.3.0",
     "@tsparticles/engine": "^3.8.1",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
@@ -33,7 +34,6 @@
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
     "recharts": "^2.15.4",
-    "stellar-sdk": "^13.3.0",
     "tailwind-merge": "^3.3.1",
     "util": "^0.12.5"
   },

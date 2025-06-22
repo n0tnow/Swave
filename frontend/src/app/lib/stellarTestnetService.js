@@ -3,11 +3,11 @@
  * Real testnet data and swap execution
  */
 
-import * as StellarSdk from 'stellar-sdk';
+import * as StellarSdk from '@stellar/stellar-sdk';
 
 class StellarTestnetService {
   constructor() {
-    // Stellar Testnet Configuration
+    // Stellar Testnet Configuration  
     this.server = new StellarSdk.Horizon.Server('https://horizon-testnet.stellar.org');
     this.sorobanServer = new StellarSdk.SorobanRpc.Server('https://soroban-testnet.stellar.org');
     this.networkPassphrase = StellarSdk.Networks.TESTNET;

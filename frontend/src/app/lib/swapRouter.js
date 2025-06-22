@@ -3,7 +3,7 @@
  * Optimal path finding for multi-hop swaps with fee optimization
  */
 
-import * as StellarSdk from 'stellar-sdk';
+import * as StellarSdk from '@stellar/stellar-sdk';
 
 export class EnhancedSwapRouter {
   constructor() {
