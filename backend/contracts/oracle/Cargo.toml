@@ -1,0 +1,33 @@
+[package]
+name = "swave-oracle"
+version = "0.1.0"
+edition = "2021"
+authors = ["SWAVE Team"]
+description = "Multi-source price oracle smart contract for SWAVE DeFi platform"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = "22.0.8"
+
+# Price feed dependencies
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+
+# HTTP client for external price feeds
+reqwest = { version = "0.11", default-features = false, features = ["json"] }
+
+# Math libraries for price calculations
+num-traits = { version = "0.2", default-features = false }
+rust_decimal = { version = "1.32", default-features = false, features = ["serde-float"] }
+
+# Time handling
+chrono = { version = "0.4", default-features = false, features = ["serde"] }
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.8", features = ["testutils"] }
+
+[features]
+default = [] 

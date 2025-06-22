@@ -1,0 +1,73 @@
+{
+  "networks": {
+    "testnet": {
+      "rpc_url": "https://soroban-testnet.stellar.org:443",
+      "network_passphrase": "Test SDF Network ; September 2015",
+      "explorer_url": "https://stellar.expert/explorer/testnet",
+      "friendbot_url": "https://friendbot.stellar.org",
+      "description": "Stellar testnet for development and testing"
+    },
+    "futurenet": {
+      "rpc_url": "https://rpc-futurenet.stellar.org:443",
+      "network_passphrase": "Test SDF Future Network ; October 2022",
+      "explorer_url": "https://stellar.expert/explorer/futurenet",
+      "friendbot_url": "https://friendbot-futurenet.stellar.org",
+      "description": "Stellar futurenet for testing future features"
+    },
+    "mainnet": {
+      "rpc_url": "https://soroban-mainnet.stellar.org:443",
+      "network_passphrase": "Public Global Stellar Network ; September 2015",
+      "explorer_url": "https://stellar.expert/explorer/public",
+      "friendbot_url": null,
+      "description": "Stellar mainnet for production deployments"
+    }
+  },
+  "current_network": "testnet",
+  "contract_limits": {
+    "max_entry_ttl": 31536000,
+    "max_instruction_count": 100000000,
+    "max_memory_bytes": 41943040,
+    "max_ledger_entry_size": 65536,
+    "max_transaction_size": 100000
+  },
+  "deployment_config": {
+    "deployer_identity": "swave-deployer",
+    "dev_identity": "swave-dev",
+    "contract_fee": 100,
+    "host_fee": 1000,
+    "timeout_seconds": 30
+  },
+  "asset_configs": {
+    "xlm": {
+      "type": "native",
+      "code": "XLM",
+      "issuer": null,
+      "decimals": 7
+    },
+    "usdc_testnet": {
+      "type": "credit_alphanum4",
+      "code": "USDC",
+      "issuer": "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
+      "decimals": 6
+    }
+  },
+  "oracle_configs": {
+    "price_feeds": {
+      "xlm_usd": {
+        "address": "",
+        "decimals": 8,
+        "heartbeat": 3600
+      },
+      "usdc_usd": {
+        "address": "",
+        "decimals": 8,
+        "heartbeat": 3600
+      }
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "created_at": "2024-01-01T00:00:00Z",
+    "description": "SWAVE network configuration for all supported Stellar networks"
+  }
+}

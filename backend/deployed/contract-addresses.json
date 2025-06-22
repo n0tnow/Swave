@@ -1,0 +1,51 @@
+{
+  "network": "testnet",
+  "deployer": "GCJC5WWUULXBEBUCTOLQ2S7NRCRX3X3IL75XMDKLAEJ5MUKT4XUFU4EU",
+  "deployed_at": "2024-12-19T11:45:00Z",
+  "contracts": {
+    "swap": "CD5FDLAZX3VCDCIMDUB2D5EFWAQJ4IHV4HU66YK6R6CZWK4VZBZPJX5U",
+    "oracle": "CCR2XYJWYDQKD672VFZ2WYF5OBXZNBWWPOUJZY6BBG3BIA5DVCP56N45",
+    "liquidity": "CBEGN6QYJBYY4WWIJM6C7R4XA5I2MWQF2IA6R2FOIGOUFI4GQ4QVMBIZ",
+    "fee-manager": "CAXR2ODIZR77GC5INTSCEX7ZVQAKKVE4XZ45DC7VTXOY64D36S4OCJZK",
+    "credit-score": "CAMQZZ5FMDFKMBQ3M7DAGJBZ3F5FCBNUDBUGM3XHGCDD5BBA6VDNPTLH",
+    "loan": "CB5Q2J2LGHSHPPZGNHHQZ46Q3BTM5RTZWDMVOYQ7BMVSUOIH5OOOHXS3",
+    "collateral": "CB4BQCSOZT5SHIDK3OERWUBW5X5GRYQRGAFSM5T54GPA74RNW5UEE5IS",
+    "multisig": "CA5CRKZRXFW2AK6IQUMXOCRUOXVGVKIN7DU2LKWKPNLZHICA2LPPNEC4",
+    "storage-manager": "CAZBL3HZEPQMPYAH4COX7NWOZL5BFLM2OMN3QS4IBF2EERAXVH3PAEF4"
+  },
+  "initialization": {
+    "swap_initialized": true,
+    "oracle_initialized": true,
+    "liquidity_initialized": true,
+    "fee_manager_initialized": true,
+    "credit_score_initialized": true,
+    "loan_initialized": true,
+    "collateral_initialized": true,
+    "multisig_initialized": true,
+    "storage_manager_initialized": true
+  },
+  "dependencies": {
+    "loan_depends_on": ["credit-score", "collateral"],
+    "swap_depends_on": ["oracle", "fee-manager"],
+    "liquidity_depends_on": ["swap", "fee-manager"]
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "platform": "SWAVE DeFi",
+    "description": "SWAVE smart contract deployment addresses - COMPLETE ECOSYSTEM DEPLOYMENT",
+    "status": "full_ecosystem_live",
+    "rpc_url": "https://soroban-testnet.stellar.org",
+    "network_passphrase": "Test SDF Network ; September 2015"
+  },
+  "transactions": {
+    "swap_deploy_tx": "831f21fd656feefa8c75a752615687a4878fdbfd7821737947d877b2174f1456",
+    "oracle_deploy_tx": "fce43fbfd458faa88657c5d0f99656408e8464fce0827134b4ff62b0d3299d74",
+    "liquidity_deploy_tx": "15163aa805c903fea9243d81cd6bd94e0610b8fe9adb7a3f8a48a13e85e6517c",
+    "fee_manager_deploy_tx": "4a8d356f4859837c557d8bd090389f201d895802eb6289c2749917748f1571d5",
+    "credit_score_deploy_tx": "8b15166722a5a532e59e225879b4f573b06b296908981c6030c86c5fca51dc3a",
+    "loan_deploy_tx": "1e003510f7be34977c9dd7a255155650eef291282840d889dca27a3c56e760e8",
+    "collateral_deploy_tx": "bebab52eafb7fe39f24a35db407cc881f9a5e49a46aa4f6565817c219f5c8452",
+    "multisig_deploy_tx": "40c95de83437225cc5bd4ea3a3532b48524a8d74f122172539506d037b3c98d9",
+    "storage_manager_deploy_tx": "64700f620083793f7d1398adb009010d995e13487c4ddffb71fe9591c9c665c6"
+  }
+}

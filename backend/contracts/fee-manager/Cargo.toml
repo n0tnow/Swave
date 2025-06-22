@@ -1,0 +1,19 @@
+[package]
+name = "swave-fee-manager"
+version = "0.1.0"
+edition = "2021"
+authors = ["SWAVE Team"]
+description = "Dynamic fee management smart contract for SWAVE DeFi platform"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = "22.0.8"
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.8", features = ["testutils"] }
+
+[features]
+default = [] 
