@@ -53,9 +53,7 @@ import {
   Timeline as ChartIcon,
   Refresh as RefreshIcon,
   Security as SecurityIcon,
-  
   Assessment as AssessmentIcon,
-  
   Gavel as GavelIcon,
   FlashOn as FlashIcon,
   AutoAwesome as MagicIcon,
@@ -83,8 +81,7 @@ import {
   InfoOutlined as InfoOutlinedIcon,
   MonetizationOn as MoneyIcon,
   Shield as ShieldIcon,
-  Star as StarIcon,
-  
+  Star as StarIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -92,6 +89,25 @@ import Header from '../components/Header';
 import { SparklesCore } from '@/components/ui/sparkles';
 import walletService from '../lib/walletService';
 import contractService from '../lib/contractService';
+
+// Tooltip descriptions for different sections
+const tooltipDescriptions = {
+  totalValue: "Total value of all your assets in USD, including portfolio positions and liquidity pools",
+  gainLoss: "Total profit or loss from your DeFi activities, calculated from initial investment",
+  assetAllocation: "Distribution of your assets across different tokens, showing portfolio diversification",
+  performanceChart: "Portfolio value over time, showing growth trends and performance metrics",
+  riskAnalysis: "Risk assessment based on volatility, concentration, and smart contract risks",
+  tradingInsights: "AI-powered insights about your trading patterns and optimization opportunities",
+  portfolioHealth: "Overall portfolio health score based on diversification, risk, and performance",
+  marketComparison: "How your portfolio performs compared to market benchmarks and indices",
+  liquidityPositions: "Your active liquidity pool positions with current value and rewards",
+  liquidityPerformance: "Performance analytics for your liquidity mining activities",
+  liquidityOpportunities: "New liquidity mining opportunities with potential APY and rewards",
+  activityStats: "Summary of your transaction activity, success rates, and trading patterns",
+  tradingPatterns: "Analysis of your trading behavior, peak hours, and preferred assets",
+  gasAnalytics: "Gas fee analysis and optimization tips to reduce transaction costs",
+  recentTransactions: "Your latest DeFi transactions across all protocols and activities"
+};
 
 // Interactive Chart Component
 const InteractiveChart = ({ data, type = 'line', color = '#667eea', height = 180 }) => {
@@ -2675,127 +2691,7 @@ const LiquidityPositions = ({ data, loading }) => {
   );
 };
 
-// Activity Container with Better Layout
-const ActivityContainer = ({ data, loading, onViewAllTransactions }) => {
-  const analyticsRef = useRef(null);
-  const [containerHeight, setContainerHeight] = useState('auto');
 
-  useEffect(() => {
-    if (!analyticsRef.current) return;
-
-    const updateHeight = () => {
-      const height = analyticsRef.current?.offsetHeight || 380;
-      setContainerHeight(height);
-    };
-
-    // Initial measurement
-    setTimeout(updateHeight, 100);
-
-    // ResizeObserver for dynamic updates
-    const resizeObserver = new ResizeObserver(updateHeight);
-    if (analyticsRef.current) {
-      resizeObserver.observe(analyticsRef.current);
-    }
-
-    const handleResize = () => {
-      setTimeout(updateHeight, 100);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [data, loading]);
-
-  return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: 2.5,
-      width: '100%'
-    }}>
-      {/* Recent Transactions - Full width at top */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        style={{ 
-          width: '100%',
-          minHeight: '300px'
-        }}
-      >
-        <RecentTransactions 
-          data={data} 
-          loading={loading}
-          onViewAllTransactions={onViewAllTransactions}
-        />
-      </motion.div>
-
-      {/* Activity Stats - Full width secondary */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        style={{ 
-          width: '100%',
-          height: '200px'
-        }}
-      >
-        <ActivityStats 
-          data={data} 
-          loading={loading}
-        />
-      </motion.div>
-
-      {/* Analytics Row - Trading Patterns & Gas Analytics */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', lg: 'row' },
-        gap: 2.5,
-        width: '100%'
-      }}>
-        {/* Trading Patterns */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          style={{ 
-            flex: '1 1 auto',
-            width: '100%',
-            height: containerHeight,
-            minWidth: '300px'
-          }}
-        >
-          <TradingPatterns 
-            data={data} 
-            loading={loading}
-          />
-        </motion.div>
-
-        {/* Gas Analytics */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          style={{ 
-            flex: '1 1 auto',
-            width: '100%',
-            height: containerHeight,
-            minWidth: '300px'
-          }}
-        >
-          <div ref={analyticsRef} style={{ height: '100%' }}>
-            <GasAnalytics 
-              data={data} 
-              loading={loading}
-            />
-          </div>
-        </motion.div>
-      </Box>
-    </Box>
-  );
-};
 
 // Activity Stats Component
 const ActivityStats = ({ data, loading }) => {
@@ -3608,29 +3504,190 @@ const RecentTransactions = ({ data, loading, onViewAllTransactions }) => {
   );
 };
 
-// Advanced Analytics Component
+// Activity Container with Better Layout
+const ActivityContainer = ({ data, loading, onViewAllTransactions }) => {
+  const analyticsRef = useRef(null);
+  const [containerHeight, setContainerHeight] = useState('auto');
+
+  useEffect(() => {
+    if (!analyticsRef.current) return;
+
+    const updateHeight = () => {
+      const height = analyticsRef.current?.offsetHeight || 380;
+      setContainerHeight(height);
+    };
+
+    // Initial measurement
+    setTimeout(updateHeight, 100);
+
+    // ResizeObserver for dynamic updates
+    const resizeObserver = new ResizeObserver(updateHeight);
+    if (analyticsRef.current) {
+      resizeObserver.observe(analyticsRef.current);
+    }
+
+    const handleResize = () => {
+      setTimeout(updateHeight, 100);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [data, loading]);
+
+  return (
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: 2.5,
+      width: '100%'
+    }}>
+      {/* Recent Transactions - Full width at top */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        style={{ 
+          width: '100%',
+          minHeight: '300px'
+        }}
+      >
+        <RecentTransactions 
+          data={data} 
+          loading={loading}
+          onViewAllTransactions={onViewAllTransactions}
+        />
+      </motion.div>
+
+      {/* Activity Stats - Full width secondary */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        style={{ 
+          width: '100%',
+          height: '200px'
+        }}
+      >
+        <ActivityStats 
+          data={data} 
+          loading={loading}
+        />
+      </motion.div>
+
+      {/* Analytics Row - Trading Patterns & Gas Analytics */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', lg: 'row' },
+        gap: 2.5,
+        width: '100%'
+      }}>
+        {/* Trading Patterns */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          style={{ 
+            flex: '1 1 auto',
+            width: '100%',
+            height: containerHeight,
+            minWidth: '300px'
+          }}
+        >
+          <TradingPatterns 
+            data={data} 
+            loading={loading}
+          />
+        </motion.div>
+
+        {/* Gas Analytics */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          style={{ 
+            flex: '1 1 auto',
+            width: '100%',
+            height: containerHeight,
+            minWidth: '300px'
+          }}
+        >
+          <div ref={analyticsRef} style={{ height: '100%' }}>
+            <GasAnalytics 
+              data={data} 
+              loading={loading}
+            />
+          </div>
+        </motion.div>
+      </Box>
+    </Box>
+  );
+};
+
+// Advanced Analytics Component with Complete Flexbox Layout
 const AdvancedAnalytics = ({ data, loading }) => {
   if (loading) {
     return (
-      <Grid container spacing={3}>
-        {[...Array(6)].map((_, index) => (
-          <Grid item xs={12} md={6} key={index}>
-            <Card sx={{ 
-              background: 'rgba(255, 255, 255, 0.03)', 
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: 3,
-              height: 200
-            }}>
-              <CardContent>
-                <Skeleton variant="text" width="60%" height={32} />
-                <Skeleton variant="rectangular" width="100%" height={120} sx={{ my: 2 }} />
-                <Skeleton variant="text" width="40%" height={24} />
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 3,
+        width: '100%'
+      }}>
+        {/* Loading Cards Row 1 */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 3,
+          width: '100%'
+        }}>
+          {[...Array(2)].map((_, index) => (
+            <Box key={index} sx={{ flex: 1, minWidth: 0 }}>
+              <Card sx={{ 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: 3,
+                height: 350
+              }}>
+                <CardContent>
+                  <Skeleton variant="text" width="60%" height={32} />
+                  <Skeleton variant="rectangular" width="100%" height={120} sx={{ my: 2 }} />
+                  <Skeleton variant="text" width="40%" height={24} />
+                </CardContent>
+              </Card>
+            </Box>
+          ))}
+        </Box>
+        
+        {/* Loading Cards Row 2 */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', lg: 'row' },
+          gap: 3,
+          width: '100%'
+        }}>
+          {[...Array(3)].map((_, index) => (
+            <Box key={index} sx={{ flex: 1, minWidth: 0 }}>
+              <Card sx={{ 
+                background: 'rgba(255, 255, 255, 0.03)', 
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: 3,
+                height: 300
+              }}>
+                <CardContent>
+                  <Skeleton variant="text" width="60%" height={32} />
+                  <Skeleton variant="rectangular" width="100%" height={100} sx={{ my: 2 }} />
+                  <Skeleton variant="text" width="40%" height={24} />
+                </CardContent>
+              </Card>
+            </Box>
+          ))}
+        </Box>
+      </Box>
     );
   }
 
@@ -3654,359 +3711,351 @@ const AdvancedAnalytics = ({ data, loading }) => {
   };
 
   return (
-    <Grid container spacing={3}>
-      {/* Credit Score Analysis */}
-      <Grid item xs={12} md={6}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.03)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 3,
-            height: '100%'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
-                <CreditCardIcon sx={{ mr: 1 }} />
-                Credit Score Analysis
-              </Typography>
-              
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Typography variant="h3" sx={{ color: creditScore >= 700 ? '#4caf50' : creditScore >= 600 ? '#ff9800' : '#f44336', fontWeight: 'bold' }}>
-                  {creditScore}
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: 3,
+      width: '100%'
+    }}>
+      {/* First Row - Credit Score & Token Prices */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: 3,
+        width: '100%'
+      }}>
+        {/* Credit Score Analysis */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card sx={{ 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              height: 350,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
+                  <CreditCardIcon sx={{ mr: 1 }} />
+                  Credit Score Analysis
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#999' }}>
-                  {creditScore >= 700 ? 'Excellent' : creditScore >= 600 ? 'Good' : 'Fair'} Credit Score
-                </Typography>
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
-                  Score Breakdown:
-                </Typography>
-                {Object.entries(creditBreakdown).map(([key, value]) => (
-                  <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2" sx={{ color: '#999', minWidth: 120 }}>
-                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
-                    </Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={(value / 20) * 100}
-                      sx={{ flex: 1, mx: 2, height: 6, borderRadius: 3 }}
-                    />
-                    <Typography variant="body2" sx={{ color: '#667eea', minWidth: 30 }}>
-                      {value}/20
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Grid>
-
-      {/* Token Prices & Oracle Data */}
-      <Grid item xs={12} md={6}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.03)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 3,
-            height: '100%'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
-                <MoneyIcon sx={{ mr: 1 }} />
-                Live Token Prices
-              </Typography>
-              
-              <Stack spacing={2}>
-                {tokenPrices.map((token, index) => (
-                  <Box key={index} sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    p: 2,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.05)'
-                  }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ width: 32, height: 32, mr: 2, bgcolor: '#667eea' }}>
-                        {token.asset.charAt(0)}
-                      </Avatar>
-                      <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600 }}>
-                        {token.asset}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="body1" sx={{ color: '#4caf50', fontWeight: 600 }}>
-                        ${(token.price / 10000000).toFixed(4)}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#999' }}>
-                        {new Date(token.timestamp).toLocaleTimeString()}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Grid>
-
-      {/* Risk Assessment */}
-      <Grid item xs={12} md={6}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.03)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 3,
-            height: '100%'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
-                <ShieldIcon sx={{ mr: 1 }} />
-                Risk Assessment
-              </Typography>
-              
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip 
-                  label={riskLevel}
-                  color={riskLevel === 'Low' ? 'success' : riskLevel === 'Moderate' ? 'warning' : 'error'}
-                  sx={{ fontSize: '1rem', py: 1, px: 2 }}
-                />
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" sx={{ color: '#fff', mb: 2 }}>
-                  Collateral Health Factor:
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={Math.min((collateralPosition.healthFactor || 1.0) * 50, 100)}
-                    sx={{ flex: 1, mr: 2, height: 8, borderRadius: 4 }}
-                    color={collateralPosition.healthFactor >= 1.5 ? 'success' : 'warning'}
-                  />
-                  <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600 }}>
-                    {(collateralPosition.healthFactor || 1.0).toFixed(2)}
+                
+                <Box sx={{ textAlign: 'center', mb: 2 }}>
+                  <Typography variant="h3" sx={{ color: creditScore >= 700 ? '#4caf50' : creditScore >= 600 ? '#ff9800' : '#f44336', fontWeight: 'bold' }}>
+                    {creditScore}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#999' }}>
+                    {creditScore >= 700 ? 'Excellent' : creditScore >= 600 ? 'Good' : 'Fair'} Credit Score
                   </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: '#999', mt: 1 }}>
-                  {data?.isLiquidationRequired ? 'Warning: Liquidation Risk' : 'Safe collateral ratio'}
+
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
+                    Score Breakdown:
+                  </Typography>
+                  {Object.entries(creditBreakdown).map(([key, value]) => (
+                    <Box key={key} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="body2" sx={{ color: '#999', minWidth: 100, fontSize: '0.75rem' }}>
+                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={(value / 20) * 100}
+                        sx={{ flex: 1, mx: 1.5, height: 5, borderRadius: 3 }}
+                      />
+                      <Typography variant="body2" sx={{ color: '#667eea', minWidth: 25, fontSize: '0.75rem' }}>
+                        {value}/20
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </Box>
+
+        {/* Token Prices & Oracle Data */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card sx={{ 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              height: 350,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
+                  <MoneyIcon sx={{ mr: 1 }} />
+                  Live Token Prices
                 </Typography>
-              </Box>
+                
+                <Stack spacing={1.5} sx={{ flex: 1 }}>
+                  {(Array.isArray(tokenPrices) ? tokenPrices : []).map((token, index) => (
+                    <Box key={index} sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center',
+                      p: 1.5,
+                      borderRadius: 2,
+                      background: 'rgba(255, 255, 255, 0.05)'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar sx={{ width: 28, height: 28, mr: 1.5, bgcolor: '#667eea', fontSize: '0.8rem' }}>
+                          {token?.asset?.charAt(0) || 'T'}
+                        </Avatar>
+                        <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem' }}>
+                          {token?.asset || 'Unknown'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="body1" sx={{ color: '#4caf50', fontWeight: 600, fontSize: '0.85rem' }}>
+                          ${((token?.price || 0) / 10000000).toFixed(4)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#999', fontSize: '0.7rem' }}>
+                          {new Date(token?.timestamp || Date.now()).toLocaleTimeString()}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </Box>
+      </Box>
 
-              <Alert 
-                severity={collateralPosition.healthFactor >= 1.5 ? 'success' : 'warning'} 
-                sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }}
-              >
-                {collateralPosition.healthFactor >= 1.5 
-                  ? 'Your positions are well-collateralized' 
-                  : 'Consider adding more collateral'}
-              </Alert>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Grid>
+      {/* Second Row - Risk Assessment, User Tier & Fees, Storage Stats */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', lg: 'row' },
+        gap: 3,
+        width: '100%'
+      }}>
+        {/* Risk Assessment */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card sx={{ 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              height: 300,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
+                  <ShieldIcon sx={{ mr: 1 }} />
+                  Risk Assessment
+                </Typography>
+                
+                <Box sx={{ textAlign: 'center', mb: 2 }}>
+                  <Chip 
+                    label={riskLevel}
+                    color={riskLevel === 'Low' ? 'success' : riskLevel === 'Moderate' ? 'warning' : 'error'}
+                    sx={{ fontSize: '0.9rem', py: 0.5, px: 1.5 }}
+                  />
+                </Box>
 
-      {/* User Tier & Fee Structure */}
-      <Grid item xs={12} md={6}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.03)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 3,
-            height: '100%'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
-                <StarIcon sx={{ mr: 1 }} />
-                User Tier & Fees
-              </Typography>
-              
-              <Box sx={{ textAlign: 'center', mb: 3 }}>
-                <Chip 
-                  label={`${userTier} Tier`}
-                  color={userTier === 'Gold' ? 'warning' : userTier === 'Silver' ? 'default' : 'secondary'}
-                  sx={{ fontSize: '1rem', py: 1, px: 2 }}
-                />
-              </Box>
+                <Box sx={{ mb: 2, flex: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#fff', mb: 1.5, fontSize: '0.85rem' }}>
+                    Collateral Health Factor:
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.min((collateralPosition.healthFactor || 1.0) * 50, 100)}
+                      sx={{ flex: 1, mr: 1.5, height: 6, borderRadius: 3 }}
+                      color={collateralPosition.healthFactor >= 1.5 ? 'success' : 'warning'}
+                    />
+                    <Typography variant="body1" sx={{ color: '#fff', fontWeight: 600, fontSize: '0.85rem' }}>
+                      {(collateralPosition.healthFactor || 1.0).toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: '#999', mt: 1, fontSize: '0.75rem' }}>
+                    {data?.isLiquidationRequired ? 'Warning: Liquidation Risk' : 'Safe collateral ratio'}
+                  </Typography>
+                </Box>
 
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2, background: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h4" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
+                <Alert 
+                  severity={collateralPosition.healthFactor >= 1.5 ? 'success' : 'warning'} 
+                  sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', fontSize: '0.75rem', mt: 'auto' }}
+                >
+                  {collateralPosition.healthFactor >= 1.5 
+                    ? 'Your positions are well-collateralized' 
+                    : 'Consider adding more collateral'}
+                </Alert>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </Box>
+
+        {/* User Tier & Fee Structure */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Card sx={{ 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              height: 300,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
+                  <StarIcon sx={{ mr: 1 }} />
+                  User Tier & Fees
+                </Typography>
+                
+                <Box sx={{ textAlign: 'center', mb: 2 }}>
+                  <Chip 
+                    label={`${userTier} Tier`}
+                    color={userTier === 'Gold' ? 'warning' : userTier === 'Silver' ? 'default' : 'secondary'}
+                    sx={{ fontSize: '0.9rem', py: 0.5, px: 1.5 }}
+                  />
+                </Box>
+
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 2, 
+                  mb: 2, 
+                  flex: 1 
+                }}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 1.5, 
+                    borderRadius: 2, 
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    flex: 1 
+                  }}>
+                    <Typography variant="h5" sx={{ color: '#4caf50', fontWeight: 'bold', fontSize: '1.2rem' }}>
                       0.25%
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#999' }}>
+                    <Typography variant="body2" sx={{ color: '#999', fontSize: '0.75rem' }}>
                       Swap Fee
                     </Typography>
                   </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2, background: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h4" sx={{ color: '#ff9800', fontWeight: 'bold' }}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 1.5, 
+                    borderRadius: 2, 
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    flex: 1 
+                  }}>
+                    <Typography variant="h5" sx={{ color: '#ff9800', fontWeight: 'bold', fontSize: '1.2rem' }}>
                       7.5%
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#999' }}>
+                    <Typography variant="body2" sx={{ color: '#999', fontSize: '0.75rem' }}>
                       Loan APR
                     </Typography>
                   </Box>
-                </Grid>
-              </Grid>
+                </Box>
 
-              <Typography variant="body2" sx={{ color: '#999', mt: 2, textAlign: 'center' }}>
-                Higher tiers get better rates and exclusive features
-              </Typography>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Grid>
+                <Typography variant="body2" sx={{ color: '#999', textAlign: 'center', fontSize: '0.75rem', mt: 'auto' }}>
+                  Higher tiers get better rates and exclusive features
+                </Typography>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </Box>
 
-      {/* Storage & System Stats */}
-      <Grid item xs={12} md={6}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.03)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 3,
-            height: '100%'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
-                <StorageIcon sx={{ mr: 1 }} />
-                System Statistics
-              </Typography>
-              
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2, background: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h4" sx={{ color: '#2196f3', fontWeight: 'bold' }}>
+        {/* Storage & System Stats */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <Card sx={{ 
+              background: 'rgba(255, 255, 255, 0.03)', 
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: 3,
+              height: 300,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
+                  <StorageIcon sx={{ mr: 1 }} />
+                  System Statistics
+                </Typography>
+                
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 2, 
+                  mb: 2,
+                  flex: 1 
+                }}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 1.5, 
+                    borderRadius: 2, 
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    flex: 1 
+                  }}>
+                    <Typography variant="h5" sx={{ color: '#2196f3', fontWeight: 'bold', fontSize: '1.2rem' }}>
                       {storageStats.efficiency}%
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#999' }}>
+                    <Typography variant="body2" sx={{ color: '#999', fontSize: '0.75rem' }}>
                       Efficiency
                     </Typography>
                   </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ textAlign: 'center', p: 2, borderRadius: 2, background: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Typography variant="h4" sx={{ color: '#9c27b0', fontWeight: 'bold' }}>
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    p: 1.5, 
+                    borderRadius: 2, 
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    flex: 1 
+                  }}>
+                    <Typography variant="h5" sx={{ color: '#9c27b0', fontWeight: 'bold', fontSize: '1.2rem' }}>
                       {Math.round((storageStats.usedSize / storageStats.totalSize) * 100)}%
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#999' }}>
+                    <Typography variant="body2" sx={{ color: '#999', fontSize: '0.75rem' }}>
                       Storage Used
                     </Typography>
                   </Box>
-                </Grid>
-              </Grid>
+                </Box>
 
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
-                  Storage Usage: {storageStats.usedSize}MB / {storageStats.totalSize}MB
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={(storageStats.usedSize / storageStats.totalSize) * 100}
-                  sx={{ height: 6, borderRadius: 3 }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Grid>
-
-      {/* Contract Network Status */}
-      <Grid item xs={12} md={6}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-        >
-          <Card sx={{ 
-            background: 'rgba(255, 255, 255, 0.03)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 3,
-            height: '100%'
-          }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ color: '#667eea', display: 'flex', alignItems: 'center' }}>
-                <AssessmentIcon sx={{ mr: 1 }} />
-                Contract Network
-              </Typography>
-              
-              <Stack spacing={2}>
-                {['Swap', 'Oracle', 'Loan', 'Collateral', 'Credit Score'].map((contract, index) => (
-                  <Box key={index} sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    p: 2,
-                    borderRadius: 2,
-                    background: 'rgba(255, 255, 255, 0.05)'
-                  }}>
-                    <Typography variant="body1" sx={{ color: '#fff' }}>
-                      {contract} Contract
-                    </Typography>
-                    <Chip 
-                      label="Active"
-                      color="success"
-                      size="small"
-                    />
-                  </Box>
-                ))}
-              </Stack>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Grid>
-    </Grid>
+                <Box sx={{ mt: 'auto' }}>
+                  <Typography variant="body2" sx={{ color: '#fff', mb: 1, fontSize: '0.8rem' }}>
+                    Storage Usage: {storageStats.usedSize}MB / {storageStats.totalSize}MB
+                  </Typography>
+                  <LinearProgress
+                    variant="determinate"
+                    value={(storageStats.usedSize / storageStats.totalSize) * 100}
+                    sx={{ height: 5, borderRadius: 3 }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </Box>
+      </Box>
+    </Box>
   );
-};
-
-// Tooltip descriptions for different sections
-const tooltipDescriptions = {
-  totalValue: "Total value of all your assets in USD, including portfolio positions and liquidity pools",
-  gainLoss: "Total profit or loss from your DeFi activities, calculated from initial investment",
-  assetAllocation: "Distribution of your assets across different tokens, showing portfolio diversification",
-  performanceChart: "Portfolio value over time, showing growth trends and performance metrics",
-  riskAnalysis: "Risk assessment based on volatility, concentration, and smart contract risks",
-  tradingInsights: "AI-powered insights about your trading patterns and optimization opportunities",
-  portfolioHealth: "Overall portfolio health score based on diversification, risk, and performance",
-  marketComparison: "How your portfolio performs compared to market benchmarks and indices",
-  liquidityPositions: "Your active liquidity pool positions with current value and rewards",
-  liquidityPerformance: "Performance analytics for your liquidity mining activities",
-  liquidityOpportunities: "New liquidity mining opportunities with potential APY and rewards",
-  activityStats: "Summary of your transaction activity, success rates, and trading patterns",
-  tradingPatterns: "Analysis of your trading behavior, peak hours, and preferred assets",
-  gasAnalytics: "Gas fee analysis and optimization tips to reduce transaction costs",
-  recentTransactions: "Your latest DeFi transactions across all protocols and activities"
 };
 
 // Main Analytics Page Component
@@ -4444,11 +4493,28 @@ export default function AnalyticsPage() {
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.4, ease: "easeInOut" }}
                   >
-                    <ActivityContainer 
-                      data={analyticsData} 
-                      loading={analyticsLoading}
-                      onViewAllTransactions={() => setTransactionDialogOpen(true)}
-                    />
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: 2.5,
+                      width: '100%'
+                    }}>
+                      {/* Activity Stats Only */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.1 }}
+                        style={{ 
+                          width: '100%',
+                          height: '200px'
+                        }}
+                      >
+                        <ActivityStats 
+                          data={analyticsData} 
+                          loading={analyticsLoading}
+                        />
+                      </motion.div>
+                    </Box>
                   </motion.div>
                 )}
 
