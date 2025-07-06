@@ -66,7 +66,8 @@ import {
   LockOpen as UnlockIcon,
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import GlowingGridDemo from './components/GlowingGridDemo';
 import StarBorderButton from './components/StarBorderButton';
@@ -504,22 +505,52 @@ const DemoFeatures = ({ walletConnected }) => {
       <Dialog
         open={demoDialogs.swapRoute}
         onClose={() => closeDemo('swapRoute')}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
         PaperProps={{
           sx: {
-            background: 'rgba(0, 0, 0, 0.9)',
-            backdropFilter: 'blur(20px)',
+            background: 'rgba(0, 0, 0, 0.95)',
+            backdropFilter: 'blur(30px)',
             border: '1px solid rgba(102, 126, 234, 0.3)',
-            borderRadius: 3
+            borderRadius: 4,
+            boxShadow: '0 25px 50px rgba(102, 126, 234, 0.2)',
+            maxHeight: '90vh'
           }
         }}
       >
-        <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(102, 126, 234, 0.2)' }}>
+        <DialogTitle sx={{ 
+          color: 'white', 
+          borderBottom: '1px solid rgba(102, 126, 234, 0.2)',
+          p: 3,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
           <Box display="flex" alignItems="center">
-            <RouteIcon sx={{ color: '#667eea', mr: 1 }} />
-            Optimal Swap Route Analysis
+            <Box sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mr: 2
+            }}>
+              <RouteIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 700 }}>
+                Optimal Swap Route Analysis
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                AI-powered route optimization for best prices
+              </Typography>
+            </Box>
           </Box>
+          <IconButton onClick={() => closeDemo('swapRoute')} sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
           {loading.swapRoute ? (
@@ -620,22 +651,65 @@ const DemoFeatures = ({ walletConnected }) => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid rgba(102, 126, 234, 0.2)', p: 2 }}>
-          <Button onClick={() => closeDemo('swapRoute')} sx={{ color: '#667eea' }}>
+        <DialogActions sx={{ 
+          borderTop: '1px solid rgba(102, 126, 234, 0.2)', 
+          p: 3,
+          gap: 2,
+          justifyContent: 'center'
+        }}>
+          <Button 
+            onClick={() => closeDemo('swapRoute')} 
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontWeight: 600,
+              px: 3
+            }}
+          >
             Close
           </Button>
           {demoData.swapRoute && (
-            <Button 
-              variant="contained"
-              sx={{ 
-                background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
-                '&:hover': { opacity: 0.9 }
-              }}
-              component={Link}
-              href="/swap"
-            >
-              Try Real Swap
-            </Button>
+            <>
+              <Button 
+                variant="outlined"
+                startIcon={<SwapIcon />}
+                component={Link}
+                href="/swap"
+                sx={{ 
+                  borderColor: '#667eea',
+                  color: '#667eea',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                Go to Swap Page
+              </Button>
+              <Button 
+                variant="contained"
+                startIcon={<LaunchIcon />}
+                component={Link}
+                href="/analytics"
+                sx={{ 
+                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                  color: 'white',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': { 
+                    background: 'linear-gradient(135deg, #5a6fd8, #6a4190)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)'
+                  }
+                }}
+              >
+                View Analytics
+              </Button>
+            </>
           )}
         </DialogActions>
       </Dialog>
@@ -644,22 +718,52 @@ const DemoFeatures = ({ walletConnected }) => {
       <Dialog
         open={demoDialogs.creditScore}
         onClose={() => closeDemo('creditScore')}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
         PaperProps={{
           sx: {
-            background: 'rgba(0, 0, 0, 0.9)',
-            backdropFilter: 'blur(20px)',
+            background: 'rgba(0, 0, 0, 0.95)',
+            backdropFilter: 'blur(30px)',
             border: '1px solid rgba(118, 75, 162, 0.3)',
-            borderRadius: 3
+            borderRadius: 4,
+            boxShadow: '0 25px 50px rgba(118, 75, 162, 0.2)',
+            maxHeight: '90vh'
           }
         }}
       >
-        <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(118, 75, 162, 0.2)' }}>
+        <DialogTitle sx={{ 
+          color: 'white', 
+          borderBottom: '1px solid rgba(118, 75, 162, 0.2)',
+          p: 3,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
           <Box display="flex" alignItems="center">
-            <CreditIcon sx={{ color: '#764ba2', mr: 1 }} />
-            Credit Score Analysis
+            <Box sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #764ba2, #667eea)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mr: 2
+            }}>
+              <CreditIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 700 }}>
+                Credit Score Analysis
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                AI-powered creditworthiness assessment
+              </Typography>
+            </Box>
           </Box>
+          <IconButton onClick={() => closeDemo('creditScore')} sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
           {loading.creditScore ? (
@@ -775,20 +879,65 @@ const DemoFeatures = ({ walletConnected }) => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid rgba(118, 75, 162, 0.2)', p: 2 }}>
-          <Button onClick={() => closeDemo('creditScore')} sx={{ color: '#764ba2' }}>
+        <DialogActions sx={{ 
+          borderTop: '1px solid rgba(118, 75, 162, 0.2)', 
+          p: 3,
+          gap: 2,
+          justifyContent: 'center'
+        }}>
+          <Button 
+            onClick={() => closeDemo('creditScore')} 
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontWeight: 600,
+              px: 3
+            }}
+          >
             Close
           </Button>
           {demoData.creditScore && (
-            <Button 
-              variant="contained"
-              sx={{ 
-                background: 'linear-gradient(45deg, #764ba2 30%, #667eea 90%)',
-                '&:hover': { opacity: 0.9 }
-              }}
-            >
-              Apply for Loan
-            </Button>
+            <>
+              <Button 
+                variant="outlined"
+                startIcon={<BalanceIcon />}
+                component={Link}
+                href="/loans"
+                sx={{ 
+                  borderColor: '#764ba2',
+                  color: '#764ba2',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    borderColor: '#764ba2',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                Apply for Loan
+              </Button>
+              <Button 
+                variant="contained"
+                startIcon={<LaunchIcon />}
+                component={Link}
+                href="/analytics"
+                sx={{ 
+                  background: 'linear-gradient(135deg, #764ba2, #667eea)',
+                  color: 'white',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': { 
+                    background: 'linear-gradient(135deg, #6a4190, #5a6fd8)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 25px rgba(118, 75, 162, 0.3)'
+                  }
+                }}
+              >
+                View Full Analysis
+              </Button>
+            </>
           )}
         </DialogActions>
       </Dialog>
@@ -797,22 +946,52 @@ const DemoFeatures = ({ walletConnected }) => {
       <Dialog
         open={demoDialogs.collateral}
         onClose={() => closeDemo('collateral')}
-        maxWidth="lg"
+        maxWidth="xl"
         fullWidth
         PaperProps={{
           sx: {
-            background: 'rgba(0, 0, 0, 0.9)',
-            backdropFilter: 'blur(20px)',
+            background: 'rgba(0, 0, 0, 0.95)',
+            backdropFilter: 'blur(30px)',
             border: '1px solid rgba(240, 147, 251, 0.3)',
-            borderRadius: 3
+            borderRadius: 4,
+            boxShadow: '0 25px 50px rgba(240, 147, 251, 0.2)',
+            maxHeight: '90vh'
           }
         }}
       >
-        <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(240, 147, 251, 0.2)' }}>
+        <DialogTitle sx={{ 
+          color: 'white', 
+          borderBottom: '1px solid rgba(240, 147, 251, 0.2)',
+          p: 3,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
           <Box display="flex" alignItems="center">
-            <LockIcon sx={{ color: '#f093fb', mr: 1 }} />
-            Smart Collateral Management
+            <Box sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #f093fb, #f5576c)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mr: 2
+            }}>
+              <LockIcon sx={{ color: 'white', fontSize: 28 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 700 }}>
+                Smart Collateral Management
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                Automated collateral optimization and protection
+              </Typography>
+            </Box>
           </Box>
+          <IconButton onClick={() => closeDemo('collateral')} sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent sx={{ pt: 3 }}>
           {loading.collateral ? (
@@ -975,20 +1154,85 @@ const DemoFeatures = ({ walletConnected }) => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ borderTop: '1px solid rgba(240, 147, 251, 0.2)', p: 2 }}>
-          <Button onClick={() => closeDemo('collateral')} sx={{ color: '#f093fb' }}>
+        <DialogActions sx={{ 
+          borderTop: '1px solid rgba(240, 147, 251, 0.2)', 
+          p: 3,
+          gap: 2,
+          justifyContent: 'center'
+        }}>
+          <Button 
+            onClick={() => closeDemo('collateral')} 
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontWeight: 600,
+              px: 3
+            }}
+          >
             Close
           </Button>
           {demoData.collateralStatus && (
-            <Button 
-              variant="contained"
-              sx={{ 
-                background: 'linear-gradient(45deg, #f093fb 30%, #f5576c 90%)',
-                '&:hover': { opacity: 0.9 }
-              }}
-            >
-              Manage Real Collateral
-            </Button>
+            <>
+              <Button 
+                variant="outlined"
+                startIcon={<LockIcon />}
+                component={Link}
+                href="/loans"
+                sx={{ 
+                  borderColor: '#f093fb',
+                  color: '#f093fb',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    borderColor: '#f093fb',
+                    backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                Manage Loans
+              </Button>
+              <Button 
+                variant="outlined"
+                startIcon={<SecurityIcon />}
+                component={Link}
+                href="/multisig-management"
+                sx={{ 
+                  borderColor: '#f093fb',
+                  color: '#f093fb',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    borderColor: '#f093fb',
+                    backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                Multisig Security
+              </Button>
+              <Button 
+                variant="contained"
+                startIcon={<LaunchIcon />}
+                component={Link}
+                href="/analytics"
+                sx={{ 
+                  background: 'linear-gradient(135deg, #f093fb, #f5576c)',
+                  color: 'white',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': { 
+                    background: 'linear-gradient(135deg, #e085f0, #e94e61)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 25px rgba(240, 147, 251, 0.3)'
+                  }
+                }}
+              >
+                Portfolio Analytics
+              </Button>
+            </>
           )}
         </DialogActions>
       </Dialog>
