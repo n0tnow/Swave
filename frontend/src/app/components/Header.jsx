@@ -20,6 +20,8 @@ import {
   Explore as ExploreIcon,
   Analytics as AnalyticsIcon,
   SwapHoriz as SwapIcon,
+  Pool as PoolIcon,
+  LocalAtm as LocalAtmIcon,
   AccountBalanceWallet as WalletIcon,
   ContentCopy as CopyIcon,
   ExitToApp as DisconnectIcon
@@ -40,8 +42,13 @@ const WalletConnection = () => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
 
   useEffect(() => {
-    const status = walletService.getConnectionStatus();
-    setWalletStatus(status);
+    // Get initial status and fetch balance if connected
+    const loadWalletStatus = async () => {
+      const status = await walletService.getConnectionStatusWithBalance();
+      setWalletStatus(status);
+    };
+
+    loadWalletStatus();
 
     const unsubscribe = walletService.onConnectionChange((event) => {
       if (event.type === 'connected') {
@@ -275,17 +282,19 @@ export default function Header({ transparent = false }) {
         
         {/* Center - Transparent Navigation Icons */}
         <Box sx={{ 
-          display: { xs: 'none', md: 'flex' }, 
+          display: { xs: 'none', sm: 'flex' }, 
           alignItems: 'center', 
-          gap: { md: 2, lg: 3 },
+          gap: { sm: 1, md: 2, lg: 3 },
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)'
         }}>
           {[
             { icon: <ExploreIcon />, label: 'Explore', color: '#8b9dc3', href: '/explore' },
-            { icon: <AnalyticsIcon />, label: 'Analytics', color: '#9bb5c7', href: '/analytics' },
-            { icon: <SwapIcon />, label: 'Swap', color: '#a8c2ca', href: '/swap' }
+            { icon: <SwapIcon />, label: 'Swap', color: '#a8c2ca', href: '/swap' },
+            { icon: <PoolIcon />, label: 'Liquidity', color: '#9bb5c7', href: '/liquidity' },
+            { icon: <LocalAtmIcon />, label: 'Loans', color: '#b8a5d6', href: '/loans' },
+            { icon: <AnalyticsIcon />, label: 'Analytics', color: '#c4a8e8', href: '/analytics' }
           ].map((item, index) => (
             <motion.div
               key={index}
@@ -296,7 +305,7 @@ export default function Header({ transparent = false }) {
               transition={{ delay: index * 0.1 + 0.2 }}
             >
               <Box
-                component={item.href ? Link : 'div'}
+                component={Link}
                 href={item.href}
                 sx={{
                   display: 'flex',
@@ -305,16 +314,16 @@ export default function Header({ transparent = false }) {
                   justifyContent: 'center',
                   cursor: 'pointer',
                   textDecoration: 'none',
-                  width: { md: 40, lg: 'auto', xl: 'auto' },
-                  height: { md: 40, lg: 40, xl: 44 },
-                  borderRadius: { md: '50%', lg: '12px' },
+                  width: { sm: 32, md: 40, lg: 'auto', xl: 'auto' },
+                  height: { sm: 32, md: 40, lg: 40, xl: 44 },
+                  borderRadius: { sm: '50%', md: '50%', lg: '12px' },
                   transition: 'all 0.3s ease',
                   background: 'transparent',
                   border: 'none',
                   position: 'relative',
                   overflow: 'hidden',
-                  px: { md: 0, lg: 1.5, xl: 2 },
-                  py: { md: 0, lg: 1, xl: 1 },
+                  px: { sm: 0, md: 0, lg: 1.5, xl: 2 },
+                  py: { sm: 0, md: 0, lg: 1, xl: 1 },
                   gap: { lg: 0.5, xl: 1 },
                   '&::before': {
                     content: '""',
@@ -339,7 +348,7 @@ export default function Header({ transparent = false }) {
                 <Box
                   sx={{
                     color: item.color,
-                    fontSize: { md: 18, lg: 20 },
+                    fontSize: { sm: 16, md: 18, lg: 20 },
                     transition: 'all 0.3s ease',
                     filter: `drop-shadow(0 0 4px ${item.color}60)`,
                     zIndex: 2,
@@ -363,7 +372,7 @@ export default function Header({ transparent = false }) {
                     textShadow: `0 0 6px ${item.color}40`,
                     zIndex: 2,
                     position: 'relative',
-                    display: { xs: 'none', md: 'none', lg: 'block' },
+                    display: { xs: 'none', sm: 'none', md: 'none', lg: 'block' },
                     whiteSpace: 'nowrap'
                   }}
                 >
@@ -383,6 +392,8 @@ export default function Header({ transparent = false }) {
           <WalletConnection />
         </motion.div>
       </Toolbar>
+
+
     </AppBar>
   );
 } 

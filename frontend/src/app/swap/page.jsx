@@ -1,1037 +1,1345 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Container,
   Typography,
-  Button,
-  Stack,
   Card,
   CardContent,
-  Grid,
+  Button,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
   IconButton,
-  Chip,
-  Alert,
-  Snackbar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Slider,
-  CircularProgress,
   Avatar,
-  Divider,
-  Tab,
-  Tabs,
   List,
   ListItem,
   ListItemText,
-  ListItemIcon,
+  ListItemAvatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  CircularProgress,
+  Alert,
+  Snackbar,
+  Paper,
+  Grid,
+  Stack,
+  Chip,
+  useTheme,
+  useMediaQuery,
+  Divider,
   Tooltip,
-  Paper
+  Collapse,
+  Fade
 } from '@mui/material';
 import {
-  SwapHoriz as SwapIcon,
+  SwapVert as SwapIcon,
   Settings as SettingsIcon,
-  Timeline as TimelineIcon,
-  AccountBalanceWallet as WalletIcon,
-  MonetizationOn as MonetizationOnIcon,
-  Refresh as RefreshIcon,
-  Assessment as AssessmentIcon,
-  Gavel as GavelIcon,
   TrendingUp as TrendingUpIcon,
-  Route as RouteIcon,
+  TrendingDown as TrendingDownIcon,
+  AccountBalanceWallet as WalletIcon,
   Speed as SpeedIcon,
-  AttachMoney as AttachMoneyIcon,
-  CompareArrows as CompareArrowsIcon
+  Timeline as TimelineIcon,
+  InfoOutlined as InfoIcon,
+  CheckCircle as CheckCircleIcon,
+  History as HistoryIcon,
+  Refresh as RefreshIcon,
+  Warning as WarningIcon,
+  LocalAtm as LocalAtmIcon,
+  Security as SecurityIcon,
+  Insights as InsightsIcon,
+  AutoAwesome as AutoAwesomeIcon,
+  Pool as PoolIcon,
+  CompareArrows as CompareArrowsIcon,
+  ExpandMore as ExpandMoreIcon,
+  Route as RouteIcon,
+  FlashOn as FlashOnIcon,
+  ShieldOutlined as ShieldIcon,
+  TrendingFlat as TrendingFlatIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowRight as KeyboardArrowRightIcon
 } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../components/Header';
-import { PulseBeams } from '@/components/ui/PulseBeams';
-import { swapRouter } from '../lib/swapRouter';
-import stellarTestnetService from '../lib/stellarTestnetService';
+import BackgroundPaths from '../components/BackgroundPaths';
+import walletService from '../lib/walletService';
+import { TokenService } from '../lib/tokenService';
+import { EnhancedSwapRouter } from '../lib/swapRouter';
 
-// Enhanced Dark Background Component
-const EnhancedDarkBackground = () => (
-  <Box
-    sx={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      zIndex: -2,
-      paddingTop: '80px', // Header spacing
-      background: `
-        radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(118, 75, 162, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
-        #000000
-      `,
-    }}
-  />
-);
+// Initialize services
+const tokenService = new TokenService();
+const swapRouter = new EnhancedSwapRouter();
 
-const SwapPage = () => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [isConnected, setIsConnected] = useState(false);
-  const [userAddress, setUserAddress] = useState('');
-  const [userData, setUserData] = useState(null);
-  const [swapLoading, setSwapLoading] = useState(false);
-  const [routeLoading, setRouteLoading] = useState(false);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
-  const [swapRouter, setSwapRouter] = useState(null);
+// LocalStorage helpers
+const STORAGE_KEYS = {
+  WALLET_BALANCES: 'swave_wallet_balances',
+  RECENT_TRANSACTIONS: 'swave_recent_transactions',
+  USER_PREFERENCES: 'swave_user_preferences'
+};
 
-  // Swap state
-  const [fromToken, setFromToken] = useState({ symbol: 'XLM', icon: '🌟', balance: 1000 });
-  const [toToken, setToToken] = useState({ symbol: 'USDC', icon: '💵', balance: 500 });
-  const [fromAmount, setFromAmount] = useState('');
-  const [toAmount, setToAmount] = useState('');
-  const [slippage, setSlippage] = useState(0.5);
-  const [showSettings, setShowSettings] = useState(false);
-  
-  // Route optimization state
-  const [optimalRoutes, setOptimalRoutes] = useState([]);
-  const [selectedRoute, setSelectedRoute] = useState(null);
-  const [showRouteDetails, setShowRouteDetails] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-  const [realTimeData, setRealTimeData] = useState(null);
-  const [stellarAccount, setStellarAccount] = useState(null);
-
-  // Available tokens with BNB added
-  const tokens = [
-    { symbol: 'XLM', icon: '🌟', balance: 1000 },
-    { symbol: 'USDC', icon: '💵', balance: 500 },
-    { symbol: 'BTC', icon: '₿', balance: 0.5 },
-    { symbol: 'ETH', icon: '⟠', balance: 2 },
-    { symbol: 'BNB', icon: '🔶', balance: 5 }
-  ];
-
-  // Load real account data from Stellar testnet
-  const loadRealAccountData = async (publicKey) => {
+const saveToStorage = (key, data) => {
+  if (typeof window !== 'undefined') {
     try {
-      console.log('📊 Loading real account data from Stellar testnet...');
-      
-      const balances = await stellarTestnetService.getAccountBalance(publicKey);
-      setRealTimeData(prev => ({ ...prev, balances }));
-      
-      // Get 24h stats for XLM/USDC
-      const stats = await stellarTestnetService.get24hStats(
-        stellarTestnetService.assets.XLM,
-        stellarTestnetService.assets.USDC
-      );
-      setRealTimeData(prev => ({ ...prev, stats }));
-      
-      console.log('✅ Real account data loaded:', { balances, stats });
-      
+      localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
-      console.error('❌ Error loading real account data:', error);
-      setNotification({
-        open: true,
-        message: 'Could not load real account data',
-        severity: 'warning'
-      });
+      console.error('Error saving to localStorage:', error);
     }
-  };
+  }
+};
 
-  // Initialize SwapRouter on component mount
-  useEffect(() => {
-    setIsClient(true);
-    const router = swapRouter;
-    setSwapRouter(router);
-    
-    // Simulate wallet connection check
-    setIsConnected(false);
-    setUserData({
-      creditScore: 85,
-      portfolioValue: 25000,
-      feeTier: 'Gold'
-    });
-
-    // Start real-time price monitoring
-    const cleanup = stellarTestnetService.startPriceMonitoring((priceUpdate) => {
-      setRealTimeData(prev => ({
-        ...prev,
-        currentPrice: priceUpdate
-      }));
-    });
-
-    return cleanup;
-  }, []);
-
-  // Calculate optimal routes when tokens or amount changes
-  useEffect(() => {
-    if (swapRouter && fromAmount && parseFloat(fromAmount) > 0 && fromToken.symbol !== toToken.symbol) {
-      calculateOptimalRoutes();
-    } else {
-      setOptimalRoutes([]);
-      setSelectedRoute(null);
-      setToAmount('');
-    }
-  }, [fromAmount, fromToken.symbol, toToken.symbol, swapRouter]);
-
-  const calculateOptimalRoutes = async () => {
-    if (!fromAmount || parseFloat(fromAmount) <= 0) return;
-
-    setRouteLoading(true);
+const loadFromStorage = (key, defaultValue = null) => {
+  if (typeof window !== 'undefined') {
     try {
-      const amount = parseFloat(fromAmount);
-      
-      // Use real Stellar testnet data
-      const realRoute = await stellarTestnetService.calculateOptimalRoute(
-        fromToken.symbol,
-        toToken.symbol,
-        amount
-      );
-      
-      setOptimalRoutes([realRoute]);
-      setSelectedRoute(realRoute);
-      setToAmount(realRoute.totalAmountOut.toFixed(6));
-      
-      console.log('✅ Real route calculated:', realRoute);
-      
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-      console.error('❌ Real route calculation error:', error);
-      
-      // Fallback to mock router
-      try {
-        const amount = parseFloat(fromAmount) * 10000000; // Convert to stroops for mock
-        const routes = swapRouter.findMultipleRoutes(fromToken.symbol, toToken.symbol, amount, 3);
-        
-        if (routes.length > 0) {
-          const bestRoute = routes[0];
-          setOptimalRoutes(routes);
-          setSelectedRoute(bestRoute);
-          setToAmount((bestRoute.outputAmount / 10000000).toFixed(6));
-          
-          setNotification({ 
-            open: true, 
-            message: 'Using simulated data - connect wallet for real testnet data', 
-            severity: 'warning' 
-          });
-        }
-      } catch (fallbackError) {
-        setNotification({ 
-          open: true, 
-          message: 'Error calculating route', 
-          severity: 'error' 
-        });
-      }
-    } finally {
-      setRouteLoading(false);
+      console.error('Error loading from localStorage:', error);
+      return defaultValue;
     }
-  };
+  }
+  return defaultValue;
+};
 
-  const handleSwapTokens = () => {
-    const tempToken = fromToken;
-    const tempAmount = fromAmount;
-    
-    setFromToken(toToken);
-    setToToken(tempToken);
-    setFromAmount(toAmount);
-  };
+// Enhanced Token selector component
+const TokenSelector = React.memo(({ open, onClose, onSelect, selectedToken, tokens, balances }) => {
+  const filteredTokens = useMemo(() => {
+    return tokens.filter(token => token.symbol !== selectedToken?.symbol);
+  }, [tokens, selectedToken]);
 
-  const executeSwap = async () => {
-    if (!isConnected) {
-      setNotification({ open: true, message: 'Please connect your wallet first', severity: 'warning' });
-      return;
-    }
-
-    if (!selectedRoute || !fromAmount || parseFloat(fromAmount) <= 0) {
-      setNotification({ open: true, message: 'Please select a valid route', severity: 'error' });
-      return;
-    }
-
-    setSwapLoading(true);
-    try {
-      if (selectedRoute.source === 'stellar_dex' && stellarAccount) {
-        // Execute real swap on Stellar testnet
-        console.log('🚀 Executing real Stellar testnet swap...');
-        
-        // Validate swap before execution
-        const validation = await stellarTestnetService.validateSwap(selectedRoute, stellarAccount.publicKey);
-        if (!validation.valid) {
-          throw new Error(validation.error);
-        }
-        
-        // Execute real swap (requires user's keypair)
-        // Note: In production, this would use the wallet service to get user's keypair
-        const result = await stellarTestnetService.executeSwap(
-          selectedRoute,
-          stellarAccount, // This would be the user's keypair from wallet
-          null
-        );
-        
-        setNotification({
-          open: true,
-          message: `Real swap executed! TX: ${result.hash.slice(0, 8)}... Received ${result.amountOut.toFixed(6)} ${toToken.symbol}`, 
-          severity: 'success'
-        });
-        
-        // Refresh account balance
-        if (stellarAccount) {
-          loadRealAccountData(stellarAccount.publicKey);
-        }
-        
-      } else {
-        // Simulate swap execution for mock data
-        await new Promise(resolve => setTimeout(resolve, selectedRoute.steps?.length * 1000 || 2000));
-        
-        setNotification({
-          open: true,
-          message: `Simulated swap completed! Received ${toAmount} ${toToken.symbol}`, 
-          severity: 'info'
-        });
-      }
-      
-      setFromAmount('');
-      setToAmount('');
-      setOptimalRoutes([]);
-      setSelectedRoute(null);
-      
-    } catch (error) {
-      console.error('❌ Swap execution failed:', error);
-      setNotification({ 
-        open: true, 
-        message: `Swap failed: ${error.message}`, 
-        severity: 'error' 
-      });
-    } finally {
-      setSwapLoading(false);
-    }
-  };
-
-  const connectWallet = () => {
-    setIsConnected(true);
-    setUserAddress('GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
-    setNotification({ open: true, message: 'Wallet connected successfully!', severity: 'success' });
-  };
-
-  const setMaxAmount = () => {
-    setFromAmount(fromToken.balance.toString());
-  };
-
-  // Tab Navigation Component
-  const TabNavigation = () => (
-    <Box sx={{ borderBottom: 1, borderColor: 'rgba(255,255,255,0.1)', mb: 4 }}>
-      <Tabs 
-        value={activeTab} 
-        onChange={(e, newValue) => setActiveTab(newValue)}
-          sx={{
-          '& .MuiTabs-indicator': {
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            height: 3
-          }
-        }}
-      >
-        <Tab 
-          icon={<SwapIcon />} 
-          label="Swap" 
-          sx={{ color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { color: 'white' } }}
-        />
-        <Tab 
-          icon={<AssessmentIcon />} 
-          label="Analytics" 
-          sx={{ color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { color: 'white' } }}
-        />
-        <Tab 
-          icon={<GavelIcon />} 
-          label="Lending" 
-          sx={{ color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { color: 'white' } }}
-        />
-        <Tab 
-          icon={<MonetizationOnIcon />} 
-          label="Liquidity" 
-          sx={{ color: 'rgba(255,255,255,0.7)', '&.Mui-selected': { color: 'white' } }}
-        />
-      </Tabs>
-    </Box>
-  );
-
-  // Enhanced User Dashboard
-  const UserDashboard = () => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <Card sx={{ 
-        background: 'rgba(255,255,255,0.05)', 
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        mb: 4
-      }}>
-        <CardContent>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={3}>
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Avatar sx={{ width: 50, height: 50, bgcolor: 'primary.main' }}>
-                  <WalletIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" color="white">
-                    {isConnected ? 'Connected' : 'Not Connected'}
-                  </Typography>
-                  <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                    {isConnected ? `${userAddress.slice(0, 8)}...` : 'Connect Wallet'}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Grid>
-            
-            <Grid item xs={12} md={2}>
-              <Box textAlign="center">
-                <Box sx={{ position: 'relative', display: 'inline-block' }}>
-                  <PulseBeams />
-                  <Typography variant="h4" color="white" sx={{ position: 'relative', zIndex: 1 }}>
-                    {userData?.creditScore || 0}
-                  </Typography>
-                </Box>
-                <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                  Credit Score
-                </Typography>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} md={2}>
-              <Box textAlign="center">
-                <Typography variant="h6" color="white">
-                  ${userData?.portfolioValue?.toLocaleString() || 0}
-                </Typography>
-                <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                  Portfolio Value
-                </Typography>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} md={2}>
-              <Box textAlign="center">
-                <Chip 
-                  label={userData?.feeTier || 'Standard'} 
-                  sx={{ 
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    fontWeight: 'bold'
-                  }} 
-                />
-                <Typography variant="caption" color="rgba(255,255,255,0.7)" display="block">
-                  Fee Tier
-                </Typography>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} md={3}>
-              <Stack spacing={1}>
-                <Typography variant="body2" color="rgba(255,255,255,0.8)">
-                  Liquidity: $12,450
-                </Typography>
-                <Typography variant="body2" color="rgba(255,255,255,0.8)">
-                  Active Loans: 2
-                </Typography>
-              </Stack>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-
-  // Enhanced Swap Interface with Route Optimization
-  const SwapInterface = () => (
-    <Grid container spacing={4}>
-      <Grid item xs={12} lg={8}>
-        <Card sx={{ 
-          background: 'rgba(255,255,255,0.05)', 
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          p: 3
-        }}>
-          <Stack spacing={3}>
-            <Typography variant="h5" color="white" gutterBottom>
-              Optimal Swap Router
-            </Typography>
-            
-            {/* From Token */}
-            <Box sx={{ 
-              background: 'rgba(255,255,255,0.03)', 
-              borderRadius: 2, 
-              p: 3,
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                  From
-                </Typography>
-                <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                  Balance: {fromToken.balance}
-                </Typography>
-              </Stack>
-              
-              <Stack direction="row" spacing={2} alignItems="center">
-                <FormControl sx={{ minWidth: 120 }}>
-                  <Select
-                    value={fromToken.symbol}
-                    onChange={(e) => {
-                      const token = tokens.find(t => t.symbol === e.target.value);
-                      setFromToken(token);
-                    }}
-                    sx={{ 
-                      color: 'white',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' }
-                    }}
-                  >
-                    {tokens.map((token) => (
-                      <MenuItem key={token.symbol} value={token.symbol}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <span>{token.icon}</span>
-                          <span>{token.symbol}</span>
-                        </Stack>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                
-                <TextField
-                  value={fromAmount}
-                  onChange={(e) => setFromAmount(e.target.value)}
-                  placeholder="0.0"
-                  type="number"
-                  sx={{ 
-                    flex: 1,
-                    '& .MuiInputBase-input': { color: 'white', fontSize: '1.5rem' },
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' }
-                  }}
-                />
-                
-                <Button 
-                  onClick={setMaxAmount}
-                  variant="outlined"
-                  size="small"
-                  sx={{ 
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    '&:hover': { borderColor: 'white' }
-                  }}
-                >
-                  MAX
-                </Button>
-              </Stack>
-            </Box>
-
-            {/* Swap Button */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-              <IconButton 
-                onClick={handleSwapTokens}
-                sx={{ 
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  '&:hover': { transform: 'rotate(180deg)' },
-                  transition: 'transform 0.3s ease'
-                }}
-              >
-                <SwapIcon />
-              </IconButton>
-            </Box>
-
-            {/* To Token */}
-            <Box sx={{ 
-              background: 'rgba(255,255,255,0.03)', 
-              borderRadius: 2, 
-              p: 3,
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                  To
-                </Typography>
-                <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                  Balance: {toToken.balance}
-                </Typography>
-              </Stack>
-              
-              <Stack direction="row" spacing={2} alignItems="center">
-                <FormControl sx={{ minWidth: 120 }}>
-                  <Select
-                    value={toToken.symbol}
-                    onChange={(e) => {
-                      const token = tokens.find(t => t.symbol === e.target.value);
-                      setToToken(token);
-                    }}
-                    sx={{ 
-                      color: 'white',
-                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' }
-                    }}
-                  >
-                    {tokens.map((token) => (
-                      <MenuItem key={token.symbol} value={token.symbol}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <span>{token.icon}</span>
-                          <span>{token.symbol}</span>
-                        </Stack>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                
-                <TextField
-                  value={routeLoading ? 'Calculating...' : toAmount}
-                  placeholder="0.0"
-                  disabled
-                  sx={{ 
-                    flex: 1,
-                    '& .MuiInputBase-input': { color: 'white', fontSize: '1.5rem' },
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' }
-                  }}
-                />
-              </Stack>
-            </Box>
-
-            {/* Route Information */}
-            {selectedRoute && (
-              <Box sx={{ 
-                background: 'rgba(102, 126, 234, 0.1)', 
-                borderRadius: 2, 
-                p: 3,
-                border: '1px solid rgba(102, 126, 234, 0.3)'
-              }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6" color="white">
-                    Optimal Route Found
-                  </Typography>
-                  <Chip 
-                    label={`${selectedRoute.steps.length} Hops`}
-                    size="small"
-                    sx={{ bgcolor: 'rgba(102, 126, 234, 0.3)', color: 'white' }}
-                  />
-                </Stack>
-                
-                <Grid container spacing={2}>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                      Route Path
-                    </Typography>
-                    <Typography variant="body1" color="white">
-                      {selectedRoute.path.join(' → ')}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                      Total Fees
-                    </Typography>
-                    <Typography variant="body1" color="white">
-                      ${(selectedRoute.totalFee / 10000000 * 0.12).toFixed(4)}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                      Price Impact
-                    </Typography>
-                    <Typography variant="body1" color="white">
-                      {selectedRoute.slippage?.toFixed(2) || 0}%
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                      Efficiency
-                    </Typography>
-                    <Typography variant="body1" color="white">
-                      {selectedRoute.efficiency?.toFixed(1) || 0}%
-                    </Typography>
-                  </Grid>
-                </Grid>
-                
-                <Button
-                  onClick={() => setShowRouteDetails(true)}
-                  variant="outlined"
-                  size="small"
-                  startIcon={<RouteIcon />}
-                  sx={{ 
-                    mt: 2,
-                    borderColor: 'rgba(255,255,255,0.3)',
-                    color: 'white'
-                  }}
-                >
-                  View Route Details
-                </Button>
-              </Box>
-            )}
-
-            {/* Alternative Routes */}
-            {optimalRoutes.length > 1 && (
-              <Box>
-                <Typography variant="h6" color="white" mb={2}>
-                  Alternative Routes
-                </Typography>
-                <Stack spacing={1}>
-                  {optimalRoutes.slice(1).map((route, index) => (
-                    <Paper
-                      key={index}
-                      sx={{
-                        background: 'rgba(255,255,255,0.03)',
-                        p: 2,
-                        cursor: 'pointer',
-                        border: selectedRoute === route ? '1px solid #667eea' : '1px solid rgba(255,255,255,0.1)',
-                        '&:hover': { background: 'rgba(255,255,255,0.08)' }
-                      }}
-                      onClick={() => {
-                        setSelectedRoute(route);
-                        setToAmount((route.outputAmount / 10000000).toFixed(6));
-                      }}
-                    >
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" color="white">
-                          {route.path.join(' → ')} ({route.steps.length} hops)
-                        </Typography>
-                        <Stack direction="row" spacing={2}>
-                          <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                            {route.efficiency?.toFixed(1)}% efficient
-                          </Typography>
-                          <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                            {(route.outputAmount / 10000000).toFixed(6)} {toToken.symbol}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    </Paper>
-                  ))}
-                </Stack>
-              </Box>
-            )}
-
-            {/* Action Buttons */}
-            <Stack direction="row" spacing={2}>
-              <Button
-                onClick={executeSwap}
-                disabled={!selectedRoute || swapLoading || !isConnected}
-                variant="contained"
-                size="large"
-                fullWidth
-                sx={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  py: 2,
-                  fontSize: '1.1rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                {swapLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  `Execute ${selectedRoute?.steps.length || 0}-Hop Swap`
-                )}
-              </Button>
-              
-              <IconButton
-                onClick={() => setShowSettings(true)}
-                sx={{ 
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  color: 'white'
-                }}
-              >
-                <SettingsIcon />
-              </IconButton>
-            </Stack>
-          </Stack>
-        </Card>
-      </Grid>
-
-      {/* Market Analytics Sidebar */}
-      <Grid item xs={12} lg={4}>
-        <SwapAnalytics />
-      </Grid>
-    </Grid>
-  );
-
-  // Route Details Dialog
-  const RouteDetailsDialog = () => (
-    <Dialog
-      open={showRouteDetails}
-      onClose={() => setShowRouteDetails(false)}
-      maxWidth="md"
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose}
+      maxWidth="sm" 
       fullWidth
       PaperProps={{
         sx: {
-          background: 'rgba(0,0,0,0.9)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.1)'
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 3,
+          color: '#fff'
         }
       }}
     >
-      <DialogTitle sx={{ color: 'white' }}>
-        Route Execution Details
+      <DialogTitle sx={{ 
+        color: '#fff', 
+        textAlign: 'center', 
+        fontWeight: 700,
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        pb: 2
+      }}>
+        Select Token
       </DialogTitle>
-      <DialogContent>
-        {selectedRoute && (
-          <Stack spacing={3}>
-            <Box>
-              <Typography variant="h6" color="white" mb={2}>
-                Swap Path: {selectedRoute.path.join(' → ')}
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                    Total Input
-                  </Typography>
-                  <Typography variant="h6" color="white">
-                    {(parseFloat(fromAmount) || 0).toFixed(6)} {fromToken.symbol}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                    Total Output
-                  </Typography>
-                  <Typography variant="h6" color="white">
-                    {(selectedRoute.outputAmount / 10000000).toFixed(6)} {toToken.symbol}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-
-            <Box>
-              <Typography variant="h6" color="white" mb={2}>
-                Step-by-Step Breakdown
-              </Typography>
-              <List>
-                {selectedRoute.steps.map((step, index) => (
-                  <ListItem key={index} sx={{ background: 'rgba(255,255,255,0.03)', mb: 1, borderRadius: 1 }}>
-                    <ListItemIcon>
-                      <Chip 
-                        label={index + 1} 
-                        size="small" 
-                        sx={{ bgcolor: 'primary.main', color: 'white' }}
-                      />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Typography color="white">
-                          {step.from} → {step.to}
-                        </Typography>
-                      }
-                      secondary={
-                        <Stack direction="row" spacing={2} mt={1}>
-                          <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                            Input: {(step.inputAmount / 10000000).toFixed(6)}
-                          </Typography>
-                          <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                            Output: {(step.outputAmount / 10000000).toFixed(6)}
-                          </Typography>
-                          <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                            Fee: {(step.fee / 10000000).toFixed(6)}
-                          </Typography>
-                          <Typography variant="body2" color="rgba(255,255,255,0.7)">
-                            Impact: {step.priceImpact?.toFixed(2)}%
-                          </Typography>
-                        </Stack>
-                      }
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          </Stack>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setShowRouteDetails(false)} sx={{ color: 'white' }}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-
-  // Rest of the components remain the same...
-  const AnalyticsInterface = () => (
-    <Grid container spacing={4}>
-      {/* Analytics content */}
-    </Grid>
-  );
-
-  const LendingInterface = () => (
-    <Grid container spacing={4}>
-      {/* Lending content */}
-    </Grid>
-  );
-
-  const LiquidityInterface = () => (
-    <Grid container spacing={4}>
-      {/* Liquidity content */}
-    </Grid>
-  );
-
-  const SwapAnalytics = () => (
-    <Card sx={{ 
-      background: 'rgba(255,255,255,0.05)', 
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      height: 'fit-content'
-    }}>
-      <CardContent>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h6" color="white">
-            Market Analytics
-          </Typography>
-          <IconButton size="small" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-            <RefreshIcon />
-          </IconButton>
-        </Stack>
-
-        <Stack spacing={3}>
-          {!isClient ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-              <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.5)' }} />
-            </Box>
-          ) : (
-            tokens.slice(0, 4).map((token, index) => (
-            <Box key={token.symbol}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <span>{token.icon}</span>
-                  <Typography variant="body1" color="white">
+      <DialogContent sx={{ p: 0 }}>
+        <List>
+          {filteredTokens.map((token) => (
+            <ListItem
+              key={token.symbol}
+              onClick={() => onSelect(token)}
+              sx={{
+                cursor: 'pointer',
+                py: 2,
+                px: 3,
+                '&:hover': { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  transform: 'translateX(4px)'
+                },
+                transition: 'all 0.3s ease',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+              }}
+            >
+              <ListItemAvatar>
+                <Avatar sx={{ 
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  width: 40,
+                  height: 40,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  color: '#fff'
+                }}>
+                  {token.symbol[0]}
+                </Avatar>
+              </ListItemAvatar>
+              <Box sx={{ flex: 1, ml: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                  <Typography component="span" sx={{ color: '#fff', fontWeight: 600, fontSize: '1rem' }}>
                     {token.symbol}
                   </Typography>
-                </Stack>
-                <Stack alignItems="flex-end">
-                  <Typography variant="body1" color="white">
-                    ${swapRouter?.getTokenPrice(token.symbol)?.toFixed(4) || '0.0000'}
+                  <Typography component="span" sx={{ color: '#22c55e', fontWeight: 600, fontSize: '0.9rem' }}>
+                    ${token.price?.toFixed(4) || '0.0000'}
                   </Typography>
-                  <Typography 
-                    variant="caption" 
-                    color={index % 2 === 0 ? '#4caf50' : '#f44336'}
-                  >
-                    {index % 2 === 0 ? '+' : '-'}{((index + 1) * 2.5).toFixed(2)}%
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography component="span" sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.85rem' }}>
+                    {token.name}
                   </Typography>
-                </Stack>
-              </Stack>
-              {index < 3 && <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />}
-            </Box>
-          )))}
-        </Stack>
-
-        <Box mt={4}>
-          <Typography variant="h6" color="white" mb={2}>
-            Liquidity Pools
-          </Typography>
-          <Stack spacing={2}>
-            {['XLM-USDC', 'BTC-ETH', 'XLM-BTC'].map((pool) => (
-              <Box 
-                key={pool}
-                sx={{ 
-                  background: 'rgba(255,255,255,0.03)', 
-                  borderRadius: 1, 
-                  p: 2 
-                }}
-              >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2" color="white">
-                    {pool}
+                  <Typography component="span" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.85rem' }}>
+                    {(balances[token.symbol] || 0).toLocaleString()} {token.symbol}
                   </Typography>
-                  <Stack alignItems="flex-end">
-                    <Typography variant="body2" color="white">
-                      ${realTimeData?.stats?.volume24h ? 
-                        realTimeData.stats.volume24h.toLocaleString() : 
-                        (pool === 'XLM-USDC' ? '1,250,000' : pool === 'BTC-ETH' ? '2,800,000' : '750,000')
-                      }
-                    </Typography>
-                    <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                      TVL
-                    </Typography>
-                  </Stack>
-                </Stack>
+                </Box>
               </Box>
-            ))}
-          </Stack>
-        </Box>
-      </CardContent>
-    </Card>
+            </ListItem>
+          ))}
+        </List>
+      </DialogContent>
+    </Dialog>
   );
+});
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 0:
-        return <SwapInterface />;
-      case 1:
-        return <AnalyticsInterface />;
-      case 2:
-        return <LendingInterface />;
-      case 3:
-        return <LiquidityInterface />;
-      default:
-        return <SwapInterface />;
-    }
-  };
+// Enhanced Wallet Balance Display
+const WalletBalanceDisplay = React.memo(({ balances, selectedToken, isLoading }) => {
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [walletBalance, setWalletBalance] = useState(null);
+
+  useEffect(() => {
+    const checkWalletStatus = async () => {
+      try {
+        const status = await walletService.getConnectionStatusWithBalance();
+        setWalletConnected(status.isConnected);
+        setWalletAddress(status.address || '');
+        setWalletBalance(status.balance || null);
+      } catch (error) {
+        console.error('Error checking wallet status:', error);
+      }
+    };
+
+    checkWalletStatus();
+    
+    // Real-time wallet updates
+    const unsubscribe = walletService.onConnectionChange(async (event) => {
+      setWalletConnected(event.type === 'connected');
+      setWalletAddress(event.address || '');
+      
+      if (event.type === 'connected') {
+        try {
+          const status = await walletService.getConnectionStatusWithBalance();
+          setWalletBalance(status.balance || null);
+        } catch (error) {
+          console.error('Error getting wallet balance:', error);
+        }
+      } else {
+        setWalletBalance(null);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+    if (!walletConnected || !selectedToken) return null;
+
+  // Use real wallet balance or fallback to stored balance
+  const realBalance = walletBalance && selectedToken.symbol === 'XLM' ? walletBalance.xlm : null;
+  const balance = realBalance || balances[selectedToken.symbol] || 0;
+  const formattedAddress = walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : '';
 
   return (
-    <>
-      <EnhancedDarkBackground />
-      <Header />
-      
-      <Container maxWidth="xl" sx={{ py: 4, position: 'relative', zIndex: 1 }}>
-        <UserDashboard />
-        <TabNavigation />
-        {renderTabContent()}
-      </Container>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card sx={{
+        background: 'rgba(255, 255, 255, 0.03)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: 3,
+        p: 2,
+        mb: 2
+      }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <WalletIcon sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '1.2rem' }} />
+            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.9rem' }}>
+              {formattedAddress}
+            </Typography>
+            {realBalance && (
+              <Chip 
+                label="Live"
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(34, 197, 94, 0.2)',
+                  color: '#22c55e',
+                  fontSize: '0.7rem',
+                  height: 20
+                }}
+              />
+            )}
+          </Box>
+          <Box sx={{ textAlign: 'right' }}>
+            {isLoading ? (
+              <CircularProgress size={16} sx={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+            ) : (
+              <>
+                <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '1rem' }}>
+                  {balance.toLocaleString()} {selectedToken.symbol}
+                </Typography>
+                <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.8rem' }}>
+                  ≈ ${(balance * (selectedToken.price || 0)).toFixed(2)}
+                </Typography>
+              </>
+            )}
+          </Box>
+        </Box>
+      </Card>
+    </motion.div>
+  );
+});
 
-      {/* Settings Dialog */}
-      <Dialog
-        open={showSettings}
-        onClose={() => setShowSettings(false)}
-        PaperProps={{
-          sx: {
-            background: 'rgba(0,0,0,0.9)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255,255,255,0.1)'
+// Optimal Route Display Component
+const OptimalRoute = React.memo(({ routeInfo, fromToken, toToken, expanded, onToggle }) => {
+  if (!routeInfo) return null;
+
+  const routeSteps = routeInfo.path || [fromToken?.symbol, toToken?.symbol];
+
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+      <Card sx={{
+        background: 'rgba(255, 255, 255, 0.02)',
+        backdropFilter: 'blur(15px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: 3,
+        maxWidth: 600,
+        width: '100%'
+    }}>
+        <CardContent sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography sx={{ 
+              color: '#fff', 
+              fontWeight: 600, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1 
+            }}>
+              <RouteIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+              Optimal Route
+        </Typography>
+            <IconButton 
+              onClick={onToggle}
+              sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+            >
+              {expanded ? <ExpandMoreIcon /> : <KeyboardArrowRightIcon />}
+            </IconButton>
+      </Box>
+
+          {/* Route Path Visualization - Centered */}
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+              {routeSteps.map((step, index) => (
+                <React.Fragment key={index}>
+                  <Chip
+                    label={step}
+                    avatar={<Avatar sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', width: 24, height: 24, color: '#fff' }}>{step[0]}</Avatar>}
+        sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.05)',
+            color: '#fff',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      fontWeight: 600
+                    }}
+                  />
+                  {index < routeSteps.length - 1 && (
+                    <KeyboardArrowRightIcon sx={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+                  )}
+                </React.Fragment>
+              ))}
+            </Stack>
+          </Box>
+
+          <Collapse in={expanded}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 2,
+                justifyContent: 'center'
+              }}>
+                <Box sx={{ 
+                  flex: '1 1 calc(50% - 8px)', 
+                  minWidth: '120px',
+                  textAlign: 'center', 
+                  p: 2, 
+                  border: '1px solid rgba(255, 255, 255, 0.1)', 
+                  borderRadius: 2, 
+                  bgcolor: 'rgba(255, 255, 255, 0.02)' 
+                }}>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', mb: 1 }}>
+                    Network Fee
+                  </Typography>
+                  <Typography sx={{ color: '#22c55e', fontWeight: 600 }}>
+                    {routeInfo.networkFee} XLM
+                  </Typography>
+                </Box>
+                <Box sx={{ 
+                  flex: '1 1 calc(50% - 8px)', 
+                  minWidth: '120px',
+                  textAlign: 'center', 
+                  p: 2, 
+                  border: '1px solid rgba(255, 255, 255, 0.1)', 
+                  borderRadius: 2, 
+                  bgcolor: 'rgba(255, 255, 255, 0.02)' 
+                }}>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', mb: 1 }}>
+                    Price Impact
+                  </Typography>
+                  <Typography sx={{ 
+                    color: parseFloat(routeInfo.priceImpact) > 5 ? '#f59e0b' : '#22c55e', 
+                    fontWeight: 600 
+                  }}>
+                    {routeInfo.priceImpact}%
+                  </Typography>
+                </Box>
+                <Box sx={{ 
+                  flex: '1 1 calc(50% - 8px)', 
+                  minWidth: '120px',
+                  textAlign: 'center', 
+                  p: 2, 
+                  border: '1px solid rgba(255, 255, 255, 0.1)', 
+                  borderRadius: 2, 
+                  bgcolor: 'rgba(255, 255, 255, 0.02)' 
+                }}>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', mb: 1 }}>
+                    Slippage
+                  </Typography>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontWeight: 600 }}>
+                    {routeInfo.slippageTolerance}%
+                  </Typography>
+                </Box>
+                <Box sx={{ 
+                  flex: '1 1 calc(50% - 8px)', 
+                  minWidth: '120px',
+                  textAlign: 'center', 
+                  p: 2, 
+                  border: '1px solid rgba(255, 255, 255, 0.1)', 
+                  borderRadius: 2, 
+                  bgcolor: 'rgba(255, 255, 255, 0.02)' 
+                }}>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.8rem', mb: 1 }}>
+                    Total Fee
+                  </Typography>
+                  <Typography sx={{ color: '#f59e0b', fontWeight: 600 }}>
+                    ${routeInfo.totalFee}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Collapse>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+});
+
+// Enhanced Animated Swap Button
+const AnimatedSwapButton = React.memo(({ 
+  loading, 
+  disabled, 
+  onClick, 
+  fromToken, 
+  toToken, 
+  fromAmount 
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <motion.div
+      whileHover={{ scale: disabled ? 1 : 1.02 }}
+      whileTap={{ scale: disabled ? 1 : 0.98 }}
+    >
+      <Button
+        fullWidth
+        variant="contained"
+        onClick={onClick}
+        disabled={disabled}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        sx={{
+          py: 3,
+          fontSize: '1.2rem',
+          fontWeight: 600,
+          background: disabled 
+            ? 'rgba(255, 255, 255, 0.1)' 
+            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%)',
+          color: '#fff',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          backdropFilter: 'blur(10px)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&:hover': {
+            background: disabled 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%)',
+            transform: disabled ? 'none' : 'translateY(-2px)',
+            boxShadow: disabled ? 'none' : '0 8px 25px rgba(255, 255, 255, 0.1)'
+          },
+          '&:disabled': {
+            background: 'rgba(255, 255, 255, 0.05)',
+            color: 'rgba(255, 255, 255, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          },
+          transition: 'all 0.3s ease',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: '-100%',
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+            transition: 'left 0.6s ease'
+          },
+          '&:hover::before': {
+            left: '100%'
           }
         }}
       >
-        <DialogTitle sx={{ color: 'white' }}>Swap Settings</DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ minWidth: 300 }}>
-            <Box>
-              <Typography variant="body2" color="rgba(255,255,255,0.7)" mb={2}>
-                Slippage Tolerance: {slippage}%
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <CircularProgress size={24} sx={{ color: 'inherit' }} />
+              <Typography sx={{ fontSize: '1rem' }}>
+                Processing Swap...
               </Typography>
-              <Slider
-                value={slippage}
-                onChange={(_, value) => setSlippage(value)}
-                min={0.1}
-                max={5}
-                step={0.1}
-                sx={{ color: 'primary.main' }}
-              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <SwapIcon sx={{ 
+                fontSize: '1.3rem',
+                transform: isHovered ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease'
+              }} />
+              <Typography sx={{ fontSize: '1.2rem', fontWeight: 600 }}>
+                {fromToken && toToken && fromAmount ? 
+                  `Swap ${fromToken.symbol} to ${toToken.symbol}` : 
+                  'Start Swap'
+                }
+              </Typography>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Button>
+    </motion.div>
+  );
+});
+
+// Swap Interface Component
+const SwapInterface = React.memo(({ 
+  tokens, 
+  balances, 
+  selectedFromToken, 
+  selectedToToken, 
+  fromAmount, 
+  toAmount, 
+  onFromTokenSelect, 
+  onToTokenSelect, 
+  onFromAmountChange, 
+  onSwap, 
+  onTokenSwitch, 
+  loading, 
+  routeInfo,
+  balanceLoading,
+  swapSuccess
+}) => {
+  const [showTokenSelector, setShowTokenSelector] = useState(false);
+  const [selectorType, setSelectorType] = useState('from');
+  const [routeExpanded, setRouteExpanded] = useState(false);
+
+  const handleTokenSelect = (token) => {
+    if (selectorType === 'from') {
+      onFromTokenSelect(token);
+    } else {
+      onToTokenSelect(token);
+    }
+    setShowTokenSelector(false);
+  };
+
+  const openTokenSelector = (type) => {
+    setSelectorType(type);
+    setShowTokenSelector(true);
+  };
+
+  return (
+    <Box sx={{ maxWidth: 600, mx: 'auto', width: '100%' }}>
+      <Card sx={{
+        background: 'rgba(255, 255, 255, 0.01)',
+        backdropFilter: 'blur(15px)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: 4,
+        p: 4,
+        position: 'relative',
+        overflow: 'visible'
+      }}>
+        {/* Yeşil başarı animasyonu */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ 
+            opacity: swapSuccess ? 1 : 0,
+            scale: swapSuccess ? 1.02 : 0.8
+          }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          style={{
+            position: 'absolute',
+            top: -12,
+            left: -12,
+            right: -12,
+            bottom: -12,
+            background: 'radial-gradient(circle, rgba(34, 197, 94, 0.3) 0%, rgba(34, 197, 94, 0.15) 40%, rgba(34, 197, 94, 0.05) 70%, transparent 90%)',
+            borderRadius: 24,
+            zIndex: -1,
+            pointerEvents: 'none',
+            filter: 'blur(4px)'
+          }}
+        />
+        
+        {/* İkinci katman yeşil efekt */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ 
+            opacity: swapSuccess ? 0.8 : 0,
+            scale: swapSuccess ? 1.01 : 0.9
+          }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+          style={{
+            position: 'absolute',
+            top: -6,
+            left: -6,
+            right: -6,
+            bottom: -6,
+            background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 50%, transparent 100%)',
+            borderRadius: 16,
+            zIndex: -1,
+            pointerEvents: 'none',
+            border: '1px solid rgba(34, 197, 94, 0.3)'
+          }}
+        />
+
+        {/* Wallet Balance Display */}
+        <WalletBalanceDisplay 
+          balances={balances} 
+          selectedToken={selectedFromToken} 
+          isLoading={balanceLoading}
+        />
+
+        {/* From Token Input */}
+          <Box sx={{ mb: 2 }}>
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1, fontSize: '0.9rem' }}>
+            From
+              </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2,
+            p: 3,
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)'
+          }}>
+            <Button
+              variant="outlined"
+              onClick={() => openTokenSelector('from')}
+              sx={{
+                minWidth: 140,
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                '&:hover': { 
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                  bgcolor: 'rgba(255, 255, 255, 0.05)'
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Avatar sx={{ width: 24, height: 24, bgcolor: 'rgba(255, 255, 255, 0.1)' }}>
+                  {selectedFromToken?.symbol?.[0] || 'T'}
+                </Avatar>
+                <Typography>{selectedFromToken?.symbol || 'Token'}</Typography>
+                <KeyboardArrowDownIcon />
             </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowSettings(false)} sx={{ color: 'white' }}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+            </Button>
+            <TextField
+              value={fromAmount}
+              onChange={(e) => onFromAmountChange(e.target.value)}
+              placeholder="0.0"
+              variant="standard"
+              InputProps={{
+                disableUnderline: true,
+                sx: {
+                  color: '#fff',
+                  fontSize: '1.5rem',
+                  fontWeight: 600,
+                  '& input': {
+                    textAlign: 'right',
+                    '&::placeholder': {
+                      color: 'rgba(255, 255, 255, 0.3)',
+                      opacity: 1
+                    }
+                  }
+                }
+              }}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+          {selectedFromToken && (
+            <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)', mt: 1, fontSize: '0.8rem' }}>
+              Balance: {(balances[selectedFromToken.symbol] || 0).toLocaleString()} {selectedFromToken.symbol}
+            </Typography>
+          )}
+          </Box>
 
-      {/* Route Details Dialog */}
-      <RouteDetailsDialog />
+          {/* Swap Button */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+            <IconButton
+            onClick={onTokenSwitch}
+              sx={{
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+                '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                transform: 'rotate(180deg)'
+                },
+              transition: 'all 0.3s ease'
+              }}
+            >
+              <SwapIcon />
+            </IconButton>
+          </Box>
 
-      {/* Notification Snackbar */}
+        {/* To Token Input */}
+        <Box sx={{ mb: 4 }}>
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1, fontSize: '0.9rem' }}>
+            To
+              </Typography>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2,
+            p: 3,
+            borderRadius: 3,
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)'
+          }}>
+            <Button
+              variant="outlined"
+              onClick={() => openTokenSelector('to')}
+              sx={{
+                minWidth: 140,
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                '&:hover': {
+                  borderColor: 'rgba(255, 255, 255, 0.4)',
+                  bgcolor: 'rgba(255, 255, 255, 0.05)'
+                }
+              }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Avatar sx={{ width: 24, height: 24, bgcolor: 'rgba(255, 255, 255, 0.1)' }}>
+                  {selectedToToken?.symbol?.[0] || 'T'}
+                </Avatar>
+                <Typography>{selectedToToken?.symbol || 'Token'}</Typography>
+                <KeyboardArrowDownIcon />
+                </Box>
+            </Button>
+            <TextField
+              value={toAmount}
+              placeholder="0.0"
+              variant="standard"
+              InputProps={{
+                disableUnderline: true,
+                readOnly: true,
+                sx: {
+                  color: '#fff',
+                  fontSize: '1.5rem',
+                  fontWeight: 600,
+                  '& input': {
+                    textAlign: 'right',
+                    '&::placeholder': {
+                      color: 'rgba(255, 255, 255, 0.3)',
+                      opacity: 1
+                    }
+                  }
+                }
+              }}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+        </Box>
+
+        {/* Animated Swap Button */}
+        <AnimatedSwapButton
+          loading={loading}
+          disabled={loading || !selectedFromToken || !selectedToToken || !fromAmount}
+          onClick={onSwap}
+          fromToken={selectedFromToken}
+          toToken={selectedToToken}
+          fromAmount={fromAmount}
+        />
+
+      <TokenSelector
+          open={showTokenSelector}
+          onClose={() => setShowTokenSelector(false)}
+        onSelect={handleTokenSelect}
+          selectedToken={selectorType === 'from' ? selectedFromToken : selectedToToken}
+          tokens={tokens}
+          balances={balances}
+        />
+      </Card>
+
+      {/* Optimal Route Display */}
+      <OptimalRoute
+        routeInfo={routeInfo}
+        fromToken={selectedFromToken}
+        toToken={selectedToToken}
+        expanded={routeExpanded}
+        onToggle={() => setRouteExpanded(!routeExpanded)}
+      />
+    </Box>
+  );
+});
+
+// Transaction History Component
+const TransactionHistory = React.memo(({ transactions }) => {
+  const [localTransactions, setLocalTransactions] = useState([]);
+
+  useEffect(() => {
+    // Load transactions from localStorage
+    const savedTransactions = loadFromStorage(STORAGE_KEYS.RECENT_TRANSACTIONS, []);
+    setLocalTransactions(savedTransactions);
+  }, [transactions]);
+
+  const displayTransactions = localTransactions.length > 0 ? localTransactions : transactions;
+
+    return (
+    <Box sx={{ mt: 8, mb: 4 }}>
+      <Container maxWidth="lg">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <Typography variant="h4" sx={{ 
+            color: '#fff', 
+            mb: 4, 
+            fontWeight: 700,
+            textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1
+          }}>
+            <HistoryIcon />
+            Recent Transactions
+            {displayTransactions.length > 0 && (
+              <Chip 
+                label={displayTransactions.length} 
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#fff',
+                  fontWeight: 600
+                }}
+              />
+            )}
+          </Typography>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+    <Card sx={{
+      background: 'rgba(255, 255, 255, 0.005)',
+      backdropFilter: 'blur(5px)',
+      border: '1px solid rgba(255, 255, 255, 0.05)',
+            borderRadius: 4
+          }}>
+            <CardContent sx={{ p: 0 }}>
+              {displayTransactions.length > 0 ? (
+                <List>
+                  {displayTransactions.map((tx, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                    >
+                      <ListItem sx={{ py: 3, px: 4, borderBottom: index < displayTransactions.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none' }}>
+                        <ListItemAvatar>
+                          <Avatar sx={{ 
+                            bgcolor: tx.type === 'swap' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                            color: tx.type === 'swap' ? '#22c55e' : '#ef4444'
+                          }}>
+                            {tx.type === 'swap' ? <CompareArrowsIcon /> : <TrendingDownIcon />}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ color: '#fff', fontWeight: 600, mb: 0.5 }}>
+                            {tx.fromAmount} {tx.fromToken} → {tx.toAmount} {tx.toToken}
+        </Typography>
+                          <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.9rem' }}>
+                            {tx.timestamp} • Fee: ${tx.fee}
+                  </Typography>
+                        </Box>
+                        <Chip
+                          label={tx.status}
+                          size="small"
+                          sx={{
+                            bgcolor: tx.status === 'Success' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                            color: tx.status === 'Success' ? '#22c55e' : '#ef4444',
+                            fontWeight: 600
+                          }}
+              />
+            </ListItem>
+                    </motion.div>
+          ))}
+        </List>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <HistoryIcon sx={{ fontSize: '3rem', color: 'rgba(255, 255, 255, 0.3)', mb: 2 }} />
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '1.1rem' }}>
+                    No transactions yet
+                  </Typography>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.9rem', mt: 1 }}>
+                    Make your first swap to see transaction history
+                  </Typography>
+                </Box>
+              )}
+      </CardContent>
+    </Card>
+        </motion.div>
+      </Container>
+    </Box>
+  );
+});
+
+// Main SwapPage Component
+export default function SwapPage() {
+  const [tokens, setTokens] = useState([]);
+  const [balances, setBalances] = useState({});
+  const [selectedFromToken, setSelectedFromToken] = useState(null);
+  const [selectedToToken, setSelectedToToken] = useState(null);
+  const [fromAmount, setFromAmount] = useState('');
+  const [toAmount, setToAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [swapSuccess, setSwapSuccess] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedBalances = loadFromStorage(STORAGE_KEYS.WALLET_BALANCES, {});
+    const savedTransactions = loadFromStorage(STORAGE_KEYS.RECENT_TRANSACTIONS, []);
+    
+    if (Object.keys(savedBalances).length > 0) {
+      setBalances(savedBalances);
+    }
+    
+    if (savedTransactions.length > 0) {
+      setTransactions(savedTransactions);
+    }
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setBalanceLoading(true);
+        const tokenList = await tokenService.getTokenList();
+        setTokens(tokenList);
+
+        // Set default tokens
+        const xlm = tokenList.find(t => t.symbol === 'XLM');
+        const usdc = tokenList.find(t => t.symbol === 'USDC');
+        if (xlm && usdc) {
+          setSelectedFromToken(xlm);
+          setSelectedToToken(usdc);
+        }
+
+        // Load wallet balances
+        const walletStatus = await walletService.getConnectionStatusWithBalance();
+        if (walletStatus.isConnected && walletStatus.balance) {
+          const newBalances = {
+            XLM: walletStatus.balance.xlm || 1500.5,
+            USDC: 250.0,
+            AQUA: 50000.0,
+            yXLM: 100.0,
+            SHX: 75.5
+          };
+          setBalances(newBalances);
+          saveToStorage(STORAGE_KEYS.WALLET_BALANCES, newBalances);
+        } else {
+          // Mock balances if wallet not connected
+          const mockBalances = {
+            XLM: 1500.5,
+            USDC: 250.0,
+            AQUA: 50000.0,
+            yXLM: 100.0,
+            SHX: 75.5
+          };
+          setBalances(mockBalances);
+          saveToStorage(STORAGE_KEYS.WALLET_BALANCES, mockBalances);
+        }
+
+        // Load default transactions if none exist
+        if (transactions.length === 0) {
+          const mockTransactions = [
+            {
+              type: 'swap',
+              fromToken: 'XLM',
+              toToken: 'USDC',
+              fromAmount: '1,000',
+              toAmount: '95.00',
+              fee: '0.30',
+              timestamp: '2 minutes ago',
+              status: 'Success'
+            },
+            {
+              type: 'swap',
+              fromToken: 'USDC',
+              toToken: 'AQUA',
+              fromAmount: '50.00',
+              toAmount: '15,625',
+              fee: '0.15',
+              timestamp: '15 minutes ago',
+              status: 'Success'
+            },
+            {
+              type: 'swap',
+              fromToken: 'AQUA',
+              toToken: 'XLM',
+              fromAmount: '10,000',
+              toAmount: '32.00',
+              fee: '0.20',
+              timestamp: '1 hour ago',
+              status: 'Success'
+            }
+          ];
+          setTransactions(mockTransactions);
+          saveToStorage(STORAGE_KEYS.RECENT_TRANSACTIONS, mockTransactions);
+        }
+
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setBalanceLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Calculate route when amount changes
+  useEffect(() => {
+    const calculateRoute = async () => {
+      if (!selectedFromToken || !selectedToToken || !fromAmount || parseFloat(fromAmount) <= 0) {
+        setToAmount('');
+        setRouteInfo(null);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Simulate route calculation with multi-hop
+        const amount = parseFloat(fromAmount);
+        const fromPrice = selectedFromToken.price || 0;
+        const toPrice = selectedToToken.price || 1;
+        
+        const baseAmount = (amount * fromPrice) / toPrice;
+        const priceImpact = Math.min(amount / 10000, 5); // Max 5% price impact
+        const slippageTolerance = 0.5; // 0.5%
+        const networkFee = 0.00001; // 0.00001 XLM
+        const swapFee = amount * 0.003; // 0.3% swap fee
+        
+        const finalAmount = baseAmount * (1 - priceImpact / 100 - slippageTolerance / 100);
+        const totalFeeUSD = (networkFee * (selectedFromToken.price || 0.095)) + (swapFee * (selectedFromToken.price || 0.095));
+        
+        // Create multi-hop route based on tokens
+        let routePath = [selectedFromToken.symbol];
+        
+        // Add intermediate tokens for common routes
+        if (selectedFromToken.symbol === 'XLM' && selectedToToken.symbol === 'AQUA') {
+          routePath.push('USDC', 'AQUA');
+        } else if (selectedFromToken.symbol === 'AQUA' && selectedToToken.symbol === 'XLM') {
+          routePath.push('USDC', 'XLM');
+        } else if (selectedFromToken.symbol !== 'USDC' && selectedToToken.symbol !== 'USDC') {
+          routePath.push('USDC');
+        }
+        
+        routePath.push(selectedToToken.symbol);
+        
+        // Remove duplicates
+        routePath = [...new Set(routePath)];
+        
+        setToAmount(finalAmount.toFixed(6));
+        setRouteInfo({
+          networkFee: networkFee.toFixed(5),
+          priceImpact: priceImpact.toFixed(2),
+          slippageTolerance: slippageTolerance.toFixed(1),
+          totalFee: totalFeeUSD.toFixed(4),
+          path: routePath
+        });
+
+      } catch (error) {
+        console.error('Error calculating route:', error);
+        setToAmount('');
+        setRouteInfo(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(calculateRoute, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [selectedFromToken, selectedToToken, fromAmount]);
+
+  const handleSwap = async () => {
+    if (!selectedFromToken || !selectedToToken || !fromAmount) {
+      setSnackbar({ open: true, message: 'Please fill in all fields', severity: 'error' });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Simulate swap execution
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Update balances
+      const swapAmount = parseFloat(fromAmount);
+      const receiveAmount = parseFloat(toAmount);
+      
+      const newBalances = {
+        ...balances,
+        [selectedFromToken.symbol]: (balances[selectedFromToken.symbol] || 0) - swapAmount,
+        [selectedToToken.symbol]: (balances[selectedToToken.symbol] || 0) + receiveAmount
+      };
+      
+      setBalances(newBalances);
+      saveToStorage(STORAGE_KEYS.WALLET_BALANCES, newBalances);
+      
+      // Add new transaction
+      const newTransaction = {
+        type: 'swap',
+        fromToken: selectedFromToken.symbol,
+        toToken: selectedToToken.symbol,
+        fromAmount: fromAmount,
+        toAmount: toAmount,
+        fee: routeInfo?.totalFee || '0.00',
+        timestamp: 'Just now',
+        status: 'Success'
+      };
+      
+      const updatedTransactions = [newTransaction, ...transactions];
+      setTransactions(updatedTransactions);
+      saveToStorage(STORAGE_KEYS.RECENT_TRANSACTIONS, updatedTransactions);
+      
+      // Trigger success animations
+      setSwapSuccess(true);
+      setTimeout(() => setSwapSuccess(false), 3000);
+      
+      setSnackbar({ open: true, message: 'Swap completed successfully!', severity: 'success' });
+      
+      // Reset form
+      setFromAmount('');
+      setToAmount('');
+      setRouteInfo(null);
+      
+    } catch (error) {
+      console.error('Swap error:', error);
+      setSnackbar({ open: true, message: 'Swap failed', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTokenSwitch = () => {
+    setSelectedFromToken(selectedToToken);
+    setSelectedToToken(selectedFromToken);
+    setFromAmount('');
+    setToAmount('');
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', position: 'relative' }}>
+        <Header />
+        
+      <BackgroundPaths title="Swap Tokens Instantly">
+        <Box sx={{ width: '100%', pt: 12 }}>
+          {/* Hero Section */}
+          <Box sx={{ textAlign: 'center', mb: 8 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+            >
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              >
+                <Typography variant="h2" sx={{ 
+                  color: '#fff', 
+                fontWeight: 800,
+                  mb: 2,
+                  background: 'linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                  fontSize: { xs: '2.5rem', md: '3.5rem' }
+                }}>
+                  <motion.span
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                  >
+                    Swap
+                  </motion.span>
+                  {' '}
+                  <motion.span
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                  >
+                    tokens
+                  </motion.span>
+                  {' '}
+                  <motion.span
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.6 }}
+                  >
+                    instantly
+                  </motion.span>
+              </Typography>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
+              >
+                <Typography variant="h6" sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)', 
+                  mb: 6,
+                  maxWidth: '600px',
+                  mx: 'auto',
+                  fontSize: { xs: '1rem', md: '1.25rem' }
+                }}>
+                  Trade cryptocurrencies with optimal routing and minimal fees on the Stellar network
+              </Typography>
+          </motion.div>
+            </motion.div>
+          </Box>
+
+            {/* Swap Interface */}
+            <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+          >
+            <Container maxWidth="md">
+              <SwapInterface
+                tokens={tokens}
+                balances={balances}
+                selectedFromToken={selectedFromToken}
+                selectedToToken={selectedToToken}
+                fromAmount={fromAmount}
+                toAmount={toAmount}
+                onFromTokenSelect={setSelectedFromToken}
+                onToTokenSelect={setSelectedToToken}
+                onFromAmountChange={setFromAmount}
+                onSwap={handleSwap}
+                onTokenSwitch={handleTokenSwitch}
+                loading={loading}
+                routeInfo={routeInfo}
+                balanceLoading={balanceLoading}
+                swapSuccess={swapSuccess}
+              />
+            </Container>
+            </motion.div>
+        </Box>
+      </BackgroundPaths>
+
+      {/* Success Icon */}
+      <AnimatePresence>
+        {swapSuccess && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.3, y: 100 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.3, y: -100 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            style={{
+              position: 'fixed',
+              top: '20%',
+              right: '5%',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '80px',
+              height: '80px',
+              backgroundColor: 'rgba(34, 197, 94, 0.9)',
+              borderRadius: '50%',
+              boxShadow: '0 8px 32px rgba(34, 197, 94, 0.4)',
+              backdropFilter: 'blur(10px)',
+              border: '2px solid rgba(255, 255, 255, 0.2)'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.4, ease: "easeOut" }}
+            >
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20,6 9,17 4,12" />
+              </svg>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Transaction History */}
+      <TransactionHistory transactions={transactions} />
+
+      {/* Snackbar */}
       <Snackbar
-        open={notification.open}
+        open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setNotification({ ...notification, open: false })}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
-        <Alert 
-          onClose={() => setNotification({ ...notification, open: false })} 
-          severity={notification.severity}
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
-          {notification.message}
+          {snackbar.message}
         </Alert>
       </Snackbar>
-    </>
+          </Box>
   );
-};
-
-export default SwapPage; 
+}

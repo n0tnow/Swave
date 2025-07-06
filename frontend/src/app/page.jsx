@@ -31,7 +31,16 @@ import {
   useTheme,
   CircularProgress,
   useScrollTrigger,
-  Slide
+  Slide,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  LinearProgress
 } from '@mui/material';
 import {
   RocketLaunch as RocketIcon,
@@ -50,13 +59,21 @@ import {
   AccountBalance as BalanceIcon,
   SwapHoriz as SwapIcon,
   Launch as LaunchIcon,
-  TrendingDown as TrendingDownIcon
+  TrendingDown as TrendingDownIcon,
+  Route as RouteIcon,
+  CreditScore as CreditIcon,
+  Lock as LockIcon,
+  LockOpen as UnlockIcon,
+  CheckCircle as CheckIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon
 } from '@mui/icons-material';
 import GlowingGridDemo from './components/GlowingGridDemo';
 import StarBorderButton from './components/StarBorderButton';
 import DataService from './lib/dataService';
+import Header from './components/Header';
 
-// Enhanced Dark Background with better animation visibility
+// Fixed Dark Background - No hydration issues
 const EnhancedDarkBackground = () => {
   const [mounted, setMounted] = useState(false);
 
@@ -109,17 +126,872 @@ const EnhancedDarkBackground = () => {
           width: '100%',
           height: '100%',
           zIndex: -1,
-          opacity: 0.8, // Increased opacity for better visibility
+          opacity: 0.8,
         }}
       >
-        <Threads
-          amplitude={0.8}
-          distance={0.2}
-          enableMouseInteraction={true}
-          color={[0.4, 0.49, 0.91]}
-          sx={{ width: '100%', height: '100%' }}
-        />
+        <ThreadsWrapper />
       </Box>
+    </>
+  );
+};
+
+// Separate wrapper to avoid hydration issues
+const ThreadsWrapper = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
+  return (
+    <Threads
+      amplitude={0.8}
+      distance={0.2}
+      enableMouseInteraction={true}
+      color={[0.4, 0.49, 0.91]}
+      sx={{ width: '100%', height: '100%' }}
+    />
+  );
+};
+
+// Demo Features Component
+const DemoFeatures = ({ walletConnected }) => {
+  const [demoDialogs, setDemoDialogs] = useState({
+    swapRoute: false,
+    creditScore: false,
+    collateral: false
+  });
+  const [demoData, setDemoData] = useState({
+    swapRoute: null,
+    creditScore: null,
+    collateralStatus: null
+  });
+  const [loading, setLoading] = useState({
+    swapRoute: false,
+    creditScore: false,
+    collateral: false
+  });
+
+  const openDemo = (type) => {
+    setDemoDialogs(prev => ({ ...prev, [type]: true }));
+  };
+
+  const closeDemo = (type) => {
+    setDemoDialogs(prev => ({ ...prev, [type]: false }));
+  };
+
+  // Demo: Optimal Swap Route
+  const demonstrateSwapRoute = async () => {
+    setLoading(prev => ({ ...prev, swapRoute: true }));
+    
+    // Simulate route calculation
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const mockRoute = {
+      path: ['XLM', 'EURT', 'USDC'],
+      inputAmount: '1000',
+      outputAmount: '95.47',
+      priceImpact: '0.12%',
+      fees: '0.75 XLM',
+      slippage: '0.08%',
+      estimatedTime: '~15 seconds',
+      gasEstimate: '0.001 XLM',
+      steps: [
+        { from: 'XLM', to: 'EURT', amount: '1000', pool: 'XLM/EURT Pool', fee: '0.3%' },
+        { from: 'EURT', to: 'USDC', amount: '95.47', pool: 'EURT/USDC Pool', fee: '0.25%' }
+      ]
+    };
+    
+    setDemoData(prev => ({ ...prev, swapRoute: mockRoute }));
+    setLoading(prev => ({ ...prev, swapRoute: false }));
+  };
+
+  // Demo: Credit Score Assessment
+  const demonstrateCreditScore = async () => {
+    setLoading(prev => ({ ...prev, creditScore: true }));
+    
+    // Simulate credit score calculation
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    
+    const mockCreditData = {
+      score: 78,
+      grade: 'A-',
+      status: 'APPROVED',
+      maxLoanAmount: '50,000 XLM',
+      interestRate: '4.5%',
+      factors: {
+        walletAge: { score: 85, description: '2+ years active' },
+        transactionHistory: { score: 92, description: '500+ transactions' },
+        assetDiversity: { score: 76, description: '8 different assets' },
+        defiActivity: { score: 68, description: 'Regular DeFi usage' }
+      },
+      recommendation: 'Eligible for instant unsecured loans up to 50,000 XLM'
+    };
+    
+    setDemoData(prev => ({ ...prev, creditScore: mockCreditData }));
+    setLoading(prev => ({ ...prev, creditScore: false }));
+  };
+
+  // Demo: Collateral Management
+  const demonstrateCollateral = async () => {
+    setLoading(prev => ({ ...prev, collateral: true }));
+    
+    // Simulate collateral operations
+    await new Promise(resolve => setTimeout(resolve, 1800));
+    
+    const mockCollateralData = {
+      locked: [
+        { asset: 'XLM', amount: '15,000', value: '$1,425', ltv: '65%', status: 'Healthy' },
+        { asset: 'USDC', amount: '5,000', value: '$5,000', ltv: '72%', status: 'Healthy' }
+      ],
+      available: [
+        { asset: 'BTC', amount: '0.25', value: '$12,500', potential: 'Can secure 75% loan' },
+        { asset: 'ETH', amount: '8.5', value: '$21,250', potential: 'Can secure 80% loan' }
+      ],
+      totalLocked: '$6,425',
+      totalAvailable: '$33,750',
+      healthFactor: 1.85,
+      liquidationPrice: '$0.067'
+    };
+    
+    setDemoData(prev => ({ ...prev, collateralStatus: mockCollateralData }));
+    setLoading(prev => ({ ...prev, collateral: false }));
+  };
+
+  return (
+    <>
+      {/* Demo Feature Cards */}
+      <Container maxWidth="lg" sx={{ mt: 8, mb: 4 }}>
+        <Typography
+          variant="h3"
+          align="center"
+          sx={{
+            mb: 6,
+            background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+            fontWeight: 'bold'
+          }}
+        >
+          🌊 Live Demo Features
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+          {/* Optimal Swap Route Demo */}
+          <Box sx={{ flex: '1 1 calc(33.333% - 16px)', minWidth: '300px' }}>
+            <Card
+              sx={{
+                background: 'rgba(102, 126, 234, 0.1)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(102, 126, 234, 0.2)',
+                borderRadius: 3,
+                height: '240px',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 20px 40px rgba(102, 126, 234, 0.3)'
+                }
+              }}
+            >
+              <CardContent sx={{ 
+                p: { xs: 2, md: 3 },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Box>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <RouteIcon sx={{ color: '#667eea', mr: 1, fontSize: { xs: 24, md: 28 } }} />
+                    <Typography variant="h6" color="white" fontWeight="bold" fontSize={{ xs: '1rem', md: '1.25rem' }}>
+                      Optimal Swap Routes
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    color="rgba(255,255,255,0.8)" 
+                    mb={3} 
+                    fontSize={{ xs: '0.8rem', md: '0.875rem' }}
+                    sx={{ 
+                      lineHeight: 1.4,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical'
+                    }}
+                  >
+                    Advanced routing finds the best path through multiple liquidity pools (XLM → EURT → USDC)
+                  </Typography>
+                </Box>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    openDemo('swapRoute');
+                    demonstrateSwapRoute();
+                  }}
+                  disabled={!walletConnected}
+                  sx={{
+                    borderColor: '#667eea',
+                    color: '#667eea',
+                    fontSize: { xs: '0.7rem', md: '0.875rem' },
+                    '&:hover': {
+                      borderColor: '#667eea',
+                      backgroundColor: 'rgba(102, 126, 234, 0.1)'
+                    }
+                  }}
+                >
+                  {walletConnected ? 'Try Swap Routing' : 'Connect Wallet First'}
+                </Button>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Credit Score Demo */}
+          <Box sx={{ flex: '1 1 calc(33.333% - 16px)', minWidth: '300px' }}>
+            <Card
+              sx={{
+                background: 'rgba(118, 75, 162, 0.1)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(118, 75, 162, 0.2)',
+                borderRadius: 3,
+                height: '240px',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 20px 40px rgba(118, 75, 162, 0.3)'
+                }
+              }}
+            >
+              <CardContent sx={{ 
+                p: { xs: 2, md: 3 },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Box>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <CreditIcon sx={{ color: '#764ba2', mr: 1, fontSize: { xs: 24, md: 28 } }} />
+                    <Typography variant="h6" color="white" fontWeight="bold" fontSize={{ xs: '1rem', md: '1.25rem' }}>
+                      Credit Score Analysis
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    color="rgba(255,255,255,0.8)" 
+                    mb={3} 
+                    fontSize={{ xs: '0.8rem', md: '0.875rem' }}
+                    sx={{ 
+                      lineHeight: 1.4,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical'
+                    }}
+                  >
+                    AI-powered credit scoring. Score 70+ gets instant loan approval without collateral
+                  </Typography>
+                </Box>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    openDemo('creditScore');
+                    demonstrateCreditScore();
+                  }}
+                  disabled={!walletConnected}
+                  sx={{
+                    borderColor: '#764ba2',
+                    color: '#764ba2',
+                    fontSize: { xs: '0.7rem', md: '0.875rem' },
+                    '&:hover': {
+                      borderColor: '#764ba2',
+                      backgroundColor: 'rgba(118, 75, 162, 0.1)'
+                    }
+                  }}
+                >
+                  {walletConnected ? 'Check My Score' : 'Connect Wallet First'}
+                </Button>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Collateral Management Demo */}
+          <Box sx={{ flex: '1 1 calc(33.333% - 16px)', minWidth: '300px' }}>
+            <Card
+              sx={{
+                background: 'rgba(240, 147, 251, 0.1)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(240, 147, 251, 0.2)',
+                borderRadius: 3,
+                height: '240px',
+                display: 'flex',
+                flexDirection: 'column',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 20px 40px rgba(240, 147, 251, 0.3)'
+                }
+              }}
+            >
+              <CardContent sx={{ 
+                p: { xs: 2, md: 3 },
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <Box>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <LockIcon sx={{ color: '#f093fb', mr: 1, fontSize: { xs: 24, md: 28 } }} />
+                    <Typography variant="h6" color="white" fontWeight="bold" fontSize={{ xs: '1rem', md: '1.25rem' }}>
+                      Smart Collateral
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    color="rgba(255,255,255,0.8)" 
+                    mb={3} 
+                    fontSize={{ xs: '0.8rem', md: '0.875rem' }}
+                    sx={{ 
+                      lineHeight: 1.4,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical'
+                    }}
+                  >
+                    Automated collateral locking/unlocking with real-time liquidation protection
+                  </Typography>
+                </Box>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    openDemo('collateral');
+                    demonstrateCollateral();
+                  }}
+                  disabled={!walletConnected}
+                  sx={{
+                    borderColor: '#f093fb',
+                    color: '#f093fb',
+                    fontSize: { xs: '0.7rem', md: '0.875rem' },
+                    '&:hover': {
+                      borderColor: '#f093fb',
+                      backgroundColor: 'rgba(240, 147, 251, 0.1)'
+                    }
+                  }}
+                >
+                  {walletConnected ? 'Manage Collateral' : 'Connect Wallet First'}
+                </Button>
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
+      </Container>
+
+      {/* Swap Route Demo Dialog */}
+      <Dialog
+        open={demoDialogs.swapRoute}
+        onClose={() => closeDemo('swapRoute')}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: 'rgba(0, 0, 0, 0.9)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(102, 126, 234, 0.3)',
+            borderRadius: 3
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(102, 126, 234, 0.2)' }}>
+          <Box display="flex" alignItems="center">
+            <RouteIcon sx={{ color: '#667eea', mr: 1 }} />
+            Optimal Swap Route Analysis
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {loading.swapRoute ? (
+            <Box textAlign="center" py={4}>
+              <CircularProgress sx={{ color: '#667eea', mb: 2 }} />
+              <Typography color="white">Analyzing optimal routes...</Typography>
+              <LinearProgress 
+                sx={{ 
+                  mt: 2, 
+                  backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                  '& .MuiLinearProgress-bar': { backgroundColor: '#667eea' }
+                }} 
+              />
+            </Box>
+          ) : demoData.swapRoute && (
+            <Box>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2, background: 'rgba(102, 126, 234, 0.1)', borderRadius: 2 }}>
+                    <Typography variant="h6" color="white" mb={2}>Route Path</Typography>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {demoData.swapRoute.path.map((token, index) => (
+                        <React.Fragment key={token}>
+                          <Chip 
+                            label={token} 
+                            sx={{ 
+                              backgroundColor: '#667eea', 
+                              color: 'white',
+                              fontWeight: 'bold'
+                            }} 
+                          />
+                          {index < demoData.swapRoute.path.length - 1 && (
+                            <SwapIcon sx={{ color: '#667eea' }} />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </Box>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2, background: 'rgba(102, 126, 234, 0.1)', borderRadius: 2 }}>
+                    <Typography variant="h6" color="white" mb={2}>Trade Summary</Typography>
+                    <Stack spacing={1}>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography color="rgba(255,255,255,0.8)">Input:</Typography>
+                        <Typography color="white" fontWeight="bold">
+                          {demoData.swapRoute.inputAmount} XLM
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography color="rgba(255,255,255,0.8)">Output:</Typography>
+                        <Typography color="white" fontWeight="bold">
+                          {demoData.swapRoute.outputAmount} USDC
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography color="rgba(255,255,255,0.8)">Price Impact:</Typography>
+                        <Typography color="#4caf50" fontWeight="bold">
+                          {demoData.swapRoute.priceImpact}
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography color="rgba(255,255,255,0.8)">Total Fees:</Typography>
+                        <Typography color="white">{demoData.swapRoute.fees}</Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                </Grid>
+              </Grid>
+              
+              <Typography variant="h6" color="white" mt={3} mb={2}>Route Steps</Typography>
+              {demoData.swapRoute.steps.map((step, index) => (
+                <Paper 
+                  key={index}
+                  sx={{ 
+                    p: 2, 
+                    mb: 1, 
+                    background: 'rgba(102, 126, 234, 0.05)',
+                    border: '1px solid rgba(102, 126, 234, 0.2)',
+                    borderRadius: 2
+                  }}
+                >
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography color="white">
+                      Step {index + 1}: {step.from} → {step.to}
+                    </Typography>
+                    <Chip 
+                      label={`Fee: ${step.fee}`} 
+                      size="small"
+                      sx={{ backgroundColor: 'rgba(102, 126, 234, 0.3)', color: 'white' }}
+                    />
+                  </Box>
+                  <Typography color="rgba(255,255,255,0.6)" variant="body2" mt={1}>
+                    Via {step.pool} • Amount: {step.amount}
+                  </Typography>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid rgba(102, 126, 234, 0.2)', p: 2 }}>
+          <Button onClick={() => closeDemo('swapRoute')} sx={{ color: '#667eea' }}>
+            Close
+          </Button>
+          {demoData.swapRoute && (
+            <Button 
+              variant="contained"
+              sx={{ 
+                background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                '&:hover': { opacity: 0.9 }
+              }}
+              component={Link}
+              href="/swap"
+            >
+              Try Real Swap
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Credit Score Demo Dialog */}
+      <Dialog
+        open={demoDialogs.creditScore}
+        onClose={() => closeDemo('creditScore')}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: 'rgba(0, 0, 0, 0.9)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(118, 75, 162, 0.3)',
+            borderRadius: 3
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(118, 75, 162, 0.2)' }}>
+          <Box display="flex" alignItems="center">
+            <CreditIcon sx={{ color: '#764ba2', mr: 1 }} />
+            Credit Score Analysis
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {loading.creditScore ? (
+            <Box textAlign="center" py={4}>
+              <CircularProgress sx={{ color: '#764ba2', mb: 2 }} />
+              <Typography color="white">Analyzing wallet history...</Typography>
+              <Typography color="rgba(255,255,255,0.6)" variant="body2" mt={1}>
+                Checking transaction patterns, asset diversity, DeFi activity...
+              </Typography>
+              <LinearProgress 
+                sx={{ 
+                  mt: 2, 
+                  backgroundColor: 'rgba(118, 75, 162, 0.2)',
+                  '& .MuiLinearProgress-bar': { backgroundColor: '#764ba2' }
+                }} 
+              />
+            </Box>
+          ) : demoData.creditScore && (
+            <Box>
+              {/* Credit Score Display */}
+              <Box textAlign="center" mb={4}>
+                <Typography variant="h2" color="white" fontWeight="bold">
+                  {demoData.creditScore.score}
+                </Typography>
+                <Typography variant="h5" color="#764ba2" fontWeight="bold">
+                  Grade {demoData.creditScore.grade}
+                </Typography>
+                <Chip 
+                  icon={<CheckIcon />}
+                  label={demoData.creditScore.status}
+                  sx={{ 
+                    mt: 2,
+                    backgroundColor: '#4caf50', 
+                    color: 'white',
+                    fontWeight: 'bold'
+                  }}
+                />
+              </Box>
+
+              {/* Loan Eligibility */}
+              <Paper sx={{ p: 3, mb: 3, background: 'rgba(76, 175, 80, 0.1)', borderRadius: 2 }}>
+                <Typography variant="h6" color="white" mb={2}>
+                  ✅ Loan Eligibility
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Typography color="rgba(255,255,255,0.8)">Max Loan Amount:</Typography>
+                    <Typography color="white" variant="h6" fontWeight="bold">
+                      {demoData.creditScore.maxLoanAmount}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography color="rgba(255,255,255,0.8)">Interest Rate:</Typography>
+                    <Typography color="white" variant="h6" fontWeight="bold">
+                      {demoData.creditScore.interestRate}
+                    </Typography>
+                  </Grid>
+                </Grid>
+                <Alert 
+                  severity="success" 
+                  sx={{ 
+                    mt: 2, 
+                    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                    '& .MuiAlert-icon': { color: '#4caf50' }
+                  }}
+                >
+                  {demoData.creditScore.recommendation}
+                </Alert>
+              </Paper>
+
+              {/* Score Breakdown */}
+              <Typography variant="h6" color="white" mb={2}>Score Factors</Typography>
+              {Object.entries(demoData.creditScore.factors).map(([key, factor]) => (
+                <Paper 
+                  key={key}
+                  sx={{ 
+                    p: 2, 
+                    mb: 1, 
+                    background: 'rgba(118, 75, 162, 0.05)',
+                    border: '1px solid rgba(118, 75, 162, 0.2)',
+                    borderRadius: 2
+                  }}
+                >
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography color="white" textTransform="capitalize">
+                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    </Typography>
+                    <Chip 
+                      label={factor.score}
+                      sx={{ 
+                        backgroundColor: factor.score >= 80 ? '#4caf50' : factor.score >= 60 ? '#ff9800' : '#f44336',
+                        color: 'white',
+                        fontWeight: 'bold'
+                      }}
+                    />
+                  </Box>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={factor.score} 
+                    sx={{ 
+                      mb: 1,
+                      backgroundColor: 'rgba(118, 75, 162, 0.2)',
+                      '& .MuiLinearProgress-bar': { 
+                        backgroundColor: factor.score >= 80 ? '#4caf50' : factor.score >= 60 ? '#ff9800' : '#f44336'
+                      }
+                    }} 
+                  />
+                  <Typography color="rgba(255,255,255,0.6)" variant="body2">
+                    {factor.description}
+                  </Typography>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid rgba(118, 75, 162, 0.2)', p: 2 }}>
+          <Button onClick={() => closeDemo('creditScore')} sx={{ color: '#764ba2' }}>
+            Close
+          </Button>
+          {demoData.creditScore && (
+            <Button 
+              variant="contained"
+              sx={{ 
+                background: 'linear-gradient(45deg, #764ba2 30%, #667eea 90%)',
+                '&:hover': { opacity: 0.9 }
+              }}
+            >
+              Apply for Loan
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Collateral Management Demo Dialog */}
+      <Dialog
+        open={demoDialogs.collateral}
+        onClose={() => closeDemo('collateral')}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: 'rgba(0, 0, 0, 0.9)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(240, 147, 251, 0.3)',
+            borderRadius: 3
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: 'white', borderBottom: '1px solid rgba(240, 147, 251, 0.2)' }}>
+          <Box display="flex" alignItems="center">
+            <LockIcon sx={{ color: '#f093fb', mr: 1 }} />
+            Smart Collateral Management
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          {loading.collateral ? (
+            <Box textAlign="center" py={4}>
+              <CircularProgress sx={{ color: '#f093fb', mb: 2 }} />
+              <Typography color="white">Loading collateral positions...</Typography>
+              <LinearProgress 
+                sx={{ 
+                  mt: 2, 
+                  backgroundColor: 'rgba(240, 147, 251, 0.2)',
+                  '& .MuiLinearProgress-bar': { backgroundColor: '#f093fb' }
+                }} 
+              />
+            </Box>
+          ) : demoData.collateralStatus && (
+            <Box>
+              {/* Portfolio Overview */}
+              <Grid container spacing={3} mb={4}>
+                <Grid item xs={12} md={3}>
+                  <Paper sx={{ p: 2, background: 'rgba(240, 147, 251, 0.1)', borderRadius: 2, textAlign: 'center' }}>
+                    <Typography color="rgba(255,255,255,0.8)">Total Locked</Typography>
+                    <Typography variant="h5" color="white" fontWeight="bold">
+                      {demoData.collateralStatus.totalLocked}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Paper sx={{ p: 2, background: 'rgba(240, 147, 251, 0.1)', borderRadius: 2, textAlign: 'center' }}>
+                    <Typography color="rgba(255,255,255,0.8)">Available</Typography>
+                    <Typography variant="h5" color="white" fontWeight="bold">
+                      {demoData.collateralStatus.totalAvailable}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Paper sx={{ p: 2, background: 'rgba(76, 175, 80, 0.1)', borderRadius: 2, textAlign: 'center' }}>
+                    <Typography color="rgba(255,255,255,0.8)">Health Factor</Typography>
+                    <Typography variant="h5" color="#4caf50" fontWeight="bold">
+                      {demoData.collateralStatus.healthFactor}
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Paper sx={{ p: 2, background: 'rgba(255, 152, 0, 0.1)', borderRadius: 2, textAlign: 'center' }}>
+                    <Typography color="rgba(255,255,255,0.8)">Liquidation Price</Typography>
+                    <Typography variant="h6" color="#ff9800" fontWeight="bold">
+                      {demoData.collateralStatus.liquidationPrice}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {/* Locked Collateral */}
+              <Typography variant="h6" color="white" mb={2}>
+                🔒 Locked Collateral
+              </Typography>
+              {demoData.collateralStatus.locked.map((item, index) => (
+                <Paper 
+                  key={index}
+                  sx={{ 
+                    p: 2, 
+                    mb: 1, 
+                    background: 'rgba(240, 147, 251, 0.05)',
+                    border: '1px solid rgba(240, 147, 251, 0.2)',
+                    borderRadius: 2
+                  }}
+                >
+                  <Grid container alignItems="center" spacing={2}>
+                    <Grid item xs={12} md={3}>
+                      <Box display="flex" alignItems="center">
+                        <LockIcon sx={{ color: '#f093fb', mr: 1 }} />
+                        <Box>
+                          <Typography color="white" fontWeight="bold">{item.asset}</Typography>
+                          <Typography color="rgba(255,255,255,0.6)" variant="body2">
+                            {item.amount}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={2}>
+                      <Typography color="white" fontWeight="bold">{item.value}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={2}>
+                      <Chip 
+                        label={`LTV: ${item.ltv}`}
+                        sx={{ backgroundColor: 'rgba(76, 175, 80, 0.3)', color: '#4caf50' }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={2}>
+                      <Chip 
+                        label={item.status}
+                        sx={{ backgroundColor: 'rgba(76, 175, 80, 0.3)', color: '#4caf50' }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Button
+                        size="small"
+                        startIcon={<UnlockIcon />}
+                        sx={{ color: '#f093fb' }}
+                      >
+                        Unlock
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              ))}
+
+              {/* Available Assets */}
+              <Typography variant="h6" color="white" mt={3} mb={2}>
+                💰 Available for Collateral
+              </Typography>
+              {demoData.collateralStatus.available.map((item, index) => (
+                <Paper 
+                  key={index}
+                  sx={{ 
+                    p: 2, 
+                    mb: 1, 
+                    background: 'rgba(76, 175, 80, 0.05)',
+                    border: '1px solid rgba(76, 175, 80, 0.2)',
+                    borderRadius: 2
+                  }}
+                >
+                  <Grid container alignItems="center" spacing={2}>
+                    <Grid item xs={12} md={3}>
+                      <Box display="flex" alignItems="center">
+                        <BalanceIcon sx={{ color: '#4caf50', mr: 1 }} />
+                        <Box>
+                          <Typography color="white" fontWeight="bold">{item.asset}</Typography>
+                          <Typography color="rgba(255,255,255,0.6)" variant="body2">
+                            {item.amount}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Typography color="white" fontWeight="bold">{item.value}</Typography>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Typography color="rgba(255,255,255,0.8)" variant="body2">
+                        {item.potential}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<LockIcon />}
+                        sx={{ 
+                          borderColor: '#4caf50',
+                          color: '#4caf50',
+                          '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' }
+                        }}
+                      >
+                        Lock as Collateral
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid rgba(240, 147, 251, 0.2)', p: 2 }}>
+          <Button onClick={() => closeDemo('collateral')} sx={{ color: '#f093fb' }}>
+            Close
+          </Button>
+          {demoData.collateralStatus && (
+            <Button 
+              variant="contained"
+              sx={{ 
+                background: 'linear-gradient(45deg, #f093fb 30%, #f5576c 90%)',
+                '&:hover': { opacity: 0.9 }
+              }}
+            >
+              Manage Real Collateral
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
@@ -137,8 +1009,23 @@ const WalletConnection = () => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
 
   useEffect(() => {
-    const status = walletService.getConnectionStatus();
-    setWalletStatus(status);
+    // Get initial status and fetch balance if connected
+    const loadWalletStatus = async () => {
+      try {
+        const status = await walletService.getConnectionStatusWithBalance();
+        setWalletStatus(status);
+      } catch (error) {
+        console.log('ℹ️ Error loading wallet status:', error);
+        setWalletStatus({
+          isConnected: false,
+          wallet: null,
+          address: null,
+          balance: null
+        });
+      }
+    };
+
+    loadWalletStatus();
 
     const unsubscribe = walletService.onConnectionChange((event) => {
       if (event.type === 'connected') {
@@ -328,19 +1215,55 @@ const StatsSection = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cryptoData, setCryptoData] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
+      
+      // Fallback data ready immediately
+      const fallbackStats = {
+        totalVolume: '$2.4B',
+        totalUsers: '125K+',
+        totalTransactions: '890K+',
+        activePools: 200,
+        avgAPY: '12.5%',
+        stellarPrice: 0.12,
+        stellarChange: 2.5
+      };
+      
+      const fallbackCrypto = {
+        stellar: { price: 0.12, change24h: 2.5, volume24h: 45000000, marketCap: 3200000000 },
+        bitcoin: { price: 43000, change24h: 1.2 },
+        ethereum: { price: 2600, change24h: 0.8 }
+      };
+
       try {
-        const [platformStats, cryptoStats] = await Promise.all([
+        // Use Promise.allSettled for better error handling
+        const [platformResult, cryptoResult] = await Promise.allSettled([
           DataService.getPlatformStats(),
           DataService.getCryptoData()
         ]);
-        setStats(platformStats);
-        setCryptoData(cryptoStats);
+        
+        // Use successful results or fallback data
+        setStats(platformResult.status === 'fulfilled' ? platformResult.value : fallbackStats);
+        setCryptoData(cryptoResult.status === 'fulfilled' ? cryptoResult.value : fallbackCrypto);
+        
+        // Log any rejections without breaking the UI
+        if (platformResult.status === 'rejected') {
+          console.log('ℹ️ Platform stats error:', platformResult.reason?.name);
+        }
+        if (cryptoResult.status === 'rejected') {
+          console.log('ℹ️ Crypto data error:', cryptoResult.reason?.name);
+        }
+        
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        // This should rarely happen with allSettled, but just in case
+        console.log('ℹ️ Unexpected stats error:', error.name);
+        setError(error);
+        setStats(fallbackStats);
+        setCryptoData(fallbackCrypto);
       } finally {
         setLoading(false);
       }
@@ -348,8 +1271,8 @@ const StatsSection = () => {
 
     fetchData();
     
-    // Update every 2 minutes
-    const interval = setInterval(fetchData, 2 * 60 * 1000);
+    // Update every 3 minutes (reduced frequency)
+    const interval = setInterval(fetchData, 3 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -359,6 +1282,11 @@ const StatsSection = () => {
         <CircularProgress sx={{ color: '#667eea' }} />
       </Box>
     );
+  }
+
+  // Show error notification if there was an issue but continue with fallback data
+  if (error) {
+    console.warn('Using fallback data due to API error:', error);
   }
 
   const statsData = [
@@ -550,186 +1478,27 @@ const StatsSection = () => {
 };
 
 export default function HomePage() {
+  const [walletConnected, setWalletConnected] = useState(false);
+
+  useEffect(() => {
+    // Check initial wallet status
+    const status = walletService.getConnectionStatus();
+    setWalletConnected(status.isConnected);
+
+    // Listen for wallet connection changes
+    const unsubscribe = walletService.onConnectionChange((event) => {
+      setWalletConnected(event.type === 'connected');
+    });
+
+    return unsubscribe;
+  }, []);
+
   return (
     <>
       <EnhancedDarkBackground />
       
-      {/* Enhanced Navigation Bar */}
-      <AppBar 
-        position="fixed" 
-        elevation={0}
-        sx={{ 
-          bgcolor: 'rgba(0, 0, 0, 0.05)',
-          backdropFilter: 'blur(8px)',
-          border: 'none',
-          transition: 'all 0.2s ease',
-          background: 'rgba(0, 0, 0, 0.05)',
-        }}
-      >
-        <Toolbar sx={{ 
-          justifyContent: 'space-between', 
-          py: { xs: 0.5, sm: 1 }, 
-          px: { xs: 2, sm: 3 }, 
-          minHeight: { xs: '56px !important', sm: '60px !important' }
-        }}>
-          {/* Left Side - Logo */}
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, cursor: 'pointer' }}>
-              <motion.div
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                animate={{ y: [0, -1, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <RocketIcon 
-                  sx={{ 
-                    color: '#667eea', 
-                    fontSize: { xs: 24, sm: 28, md: 32 },
-                    filter: 'drop-shadow(0 0 8px rgba(102, 126, 234, 0.4))',
-                    transition: 'all 0.3s ease'
-                  }} 
-                />
-              </motion.div>
-              
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    fontWeight: 800,
-                    fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.6rem' },
-                    background: 'linear-gradient(135deg, #667eea 0%, #f093fb 50%, #667eea 100%)',
-                    backgroundSize: '200% 200%',
-                    animation: 'gradientShift 3s ease infinite',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    color: 'transparent',
-                    '@keyframes gradientShift': {
-                      '0%': { backgroundPosition: '0% 50%' },
-                      '50%': { backgroundPosition: '100% 50%' },
-                      '100%': { backgroundPosition: '0% 50%' }
-                    }
-                  }}
-                >
-                  Swave
-                </Typography>
-              </motion.div>
-            </Box>
-          </Link>
-          
-          {/* Center - Transparent Navigation Icons */}
-          <Box sx={{ 
-            display: { xs: 'none', md: 'flex' }, 
-            alignItems: 'center', 
-            gap: { md: 2, lg: 3 },
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)'
-          }}>
-            {[
-              { icon: <ExploreIcon />, label: 'Explore', color: '#8b9dc3', href: '/explore' },
-              { icon: <AnalyticsIcon />, label: 'Analytics', color: '#9bb5c7', href: '/analytics' },
-              { icon: <SwapIcon />, label: 'Swap', color: '#a8c2ca', href: '/swap' }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 + 0.2 }}
-              >
-                <Box
-                  component={item.href ? Link : 'div'}
-                  href={item.href}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    textDecoration: 'none',
-                    width: { md: 40, lg: 'auto', xl: 'auto' },
-                    height: { md: 40, lg: 40, xl: 44 },
-                    borderRadius: { md: '50%', lg: '12px' },
-                    transition: 'all 0.3s ease',
-                    background: 'transparent',
-                    border: 'none',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    px: { md: 0, lg: 1.5, xl: 2 },
-                    py: { md: 0, lg: 1, xl: 1 },
-                    gap: { lg: 0.5, xl: 1 },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: '-100%',
-                      width: '100%',
-                      height: '100%',
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                      transition: 'left 0.6s ease',
-                      zIndex: 1,
-                    },
-                    '&:hover': {
-                      background: `${item.color}15`,
-                      transform: 'translateY(-2px)',
-                      '&::before': {
-                        left: '100%',
-                      }
-                    }
-                  }}
-                >
-                  <Box
-                    sx={{
-                      color: item.color,
-                      fontSize: { md: 18, lg: 20 },
-                      transition: 'all 0.3s ease',
-                      filter: `drop-shadow(0 0 4px ${item.color}60)`,
-                      zIndex: 2,
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {item.icon}
-                  </Box>
-                  
-                  {/* Show text on larger screens */}
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: item.color,
-                      fontSize: { lg: '0.8rem', xl: '0.85rem' },
-                      fontWeight: 600,
-                      transition: 'all 0.3s ease',
-                      textShadow: `0 0 6px ${item.color}40`,
-                      zIndex: 2,
-                      position: 'relative',
-                      display: { xs: 'none', md: 'none', lg: 'block' },
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {item.label}
-                  </Typography>
-                </Box>
-              </motion.div>
-            ))}
-          </Box>
-          
-          {/* Right Side - Wallet Connection */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <WalletConnection />
-          </motion.div>
-        </Toolbar>
-      </AppBar>
+      {/* Header Navigation */}
+      <Header transparent={true} />
       
       {/* Section 1: Hero/Landing - Full Screen */}
       <Box 
@@ -986,7 +1755,10 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Section 2: Features - Full Screen */}
+      {/* Section 2: Demo Features */}
+      <DemoFeatures walletConnected={walletConnected} />
+
+      {/* Section 3: Features - Full Screen */}
       <Box 
         component="section"
         sx={{ 
@@ -1002,7 +1774,7 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Section 3: Stats - Full Screen */}
+      {/* Section 4: Stats - Full Screen */}
       <Box 
         component="section"
         sx={{ 

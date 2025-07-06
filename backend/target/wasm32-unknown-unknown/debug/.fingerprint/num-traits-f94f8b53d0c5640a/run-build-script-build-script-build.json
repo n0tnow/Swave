@@ -1,1 +1,0 @@
-{"rustc":16591470773350601817,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[5157631553186200874,"build_script_build",false,18358568362416009424]],"local":[{"RerunIfChanged":{"output":"wasm32-unknown-unknown\\debug\\build\\num-traits-f94f8b53d0c5640a\\output","paths":["build.rs"]}}],"rustflags":[],"config":0,"compile_kind":0}

@@ -544,8 +544,17 @@ impl UltimateLiquidityContract {
 
     /// Get global statistics
     pub fn get_global_stats(env: Env) -> Result<GlobalLiquidityStats, LiquidityError> {
-        env.storage().instance()
+        // Return default stats if not initialized yet
+        let default_stats = GlobalLiquidityStats {
+            total_tvl_usd: 0,
+            total_pools: 0,
+            active_providers: 0,
+            total_rewards_distributed: 0,
+            average_apy: BASE_APY,
+        };
+        
+        Ok(env.storage().instance()
             .get::<DataKey, GlobalLiquidityStats>(&DataKey::GlobalStats)
-            .ok_or(LiquidityError::PoolNotFound)
+            .unwrap_or(default_stats))
     }
 } 

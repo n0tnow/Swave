@@ -29,6 +29,86 @@ class StellarWalletService {
     // Initialize only in browser environment
     if (typeof window !== 'undefined') {
       this.initializeWalletKit();
+      
+      // Restore connection after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        this.restoreConnectionFromStorage();
+      }, 100);
+    }
+  }
+
+  // Restore connection from localStorage
+  async restoreConnectionFromStorage() {
+    try {
+      const savedConnection = localStorage.getItem('swave_wallet_connection');
+      if (savedConnection) {
+        const connectionData = JSON.parse(savedConnection);
+        
+        // Verify the connection is still valid
+        if (connectionData.address && connectionData.wallet) {
+          console.log('🔄 Attempting to restore wallet connection...');
+          
+          // Set the wallet if available
+          try {
+            await this.setWallet(connectionData.wallet.id);
+            
+            // Verify the address is still accessible
+            const currentAddress = await this.getAddress();
+            
+            if (currentAddress.address === connectionData.address) {
+              // Connection restored successfully
+              this.connectedWallet = connectionData.wallet;
+              this.userAddress = connectionData.address;
+              this.isConnected = true;
+              
+              // Get fresh balance
+              const balance = await this.getBalance();
+              
+              // Notify listeners
+              this.notifyConnectionListeners({
+                type: 'connected',
+                wallet: connectionData.wallet,
+                address: connectionData.address,
+                balance
+              });
+              
+              console.log('✅ Wallet connection restored successfully');
+            } else {
+              // Address mismatch, clear stored data
+              this.clearStoredConnection();
+            }
+          } catch (error) {
+            console.log('⚠️ Could not restore wallet connection:', error.message);
+            this.clearStoredConnection();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error restoring connection:', error);
+      this.clearStoredConnection();
+    }
+  }
+
+  // Save connection to localStorage
+  saveConnectionToStorage(wallet, address) {
+    try {
+      const connectionData = {
+        wallet,
+        address,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('swave_wallet_connection', JSON.stringify(connectionData));
+    } catch (error) {
+      console.error('❌ Failed to save connection to storage:', error);
+    }
+  }
+
+  // Clear stored connection
+  clearStoredConnection() {
+    try {
+      localStorage.removeItem('swave_wallet_connection');
+    } catch (error) {
+      console.error('❌ Failed to clear stored connection:', error);
     }
   }
 
@@ -129,6 +209,9 @@ class StellarWalletService {
               this.connectedWallet = option;
               this.userAddress = address;
               this.isConnected = true;
+              
+              // Save connection to localStorage
+              this.saveConnectionToStorage(option, address);
               
               // Get balance
               const balance = await this.getBalance();
@@ -304,6 +387,9 @@ class StellarWalletService {
     this.userAddress = null;
     this.isConnected = false;
     
+    // Clear stored connection
+    this.clearStoredConnection();
+    
     // Notify listeners
     this.notifyConnectionListeners({
       type: 'disconnected'
@@ -356,8 +442,23 @@ class StellarWalletService {
       isConnected: this.isConnected,
       wallet: this.connectedWallet,
       address: this.userAddress,
-      network: this.networkConfig.network
+      network: this.networkConfig.network,
+      balance: null // Balance will be fetched separately to avoid blocking
     };
+  }
+
+  // Get connection status with balance
+  async getConnectionStatusWithBalance() {
+    const status = this.getConnectionStatus();
+    if (status.isConnected) {
+      try {
+        status.balance = await this.getBalance();
+      } catch (error) {
+        console.error('❌ Failed to get balance:', error);
+        status.balance = { xlm: 0, assets: [] };
+      }
+    }
+    return status;
   }
 
   // Switch network

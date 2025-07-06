@@ -7,13 +7,17 @@ class DataService {
     this.stellarAPI = 'https://horizon.stellar.org';
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+    this.fallbackCacheTimeout = 15 * 60 * 1000; // 15 minutes for fallback data
   }
 
-  // Cache management
+  // Cache management with fallback timeout
   getCached(key) {
     const cached = this.cache.get(key);
-    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      return cached.data;
+    if (cached) {
+      const timeout = cached.isFallback ? this.fallbackCacheTimeout : this.cacheTimeout;
+      if (Date.now() - cached.timestamp < timeout) {
+        return cached.data;
+      }
     }
     return null;
   }
@@ -25,120 +29,211 @@ class DataService {
     });
   }
 
-  // Fetch crypto market data
+  // Set cached data with longer timeout for fallback data
+  setCachedFallback(key, data) {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      isFallback: true
+    });
+  }
+
+  // Fetch crypto market data with robust fallback
   async getCryptoData() {
     const cacheKey = 'crypto-data';
     const cached = this.getCached(cacheKey);
     if (cached) return cached;
 
+    // Generate realistic fallback data first (using stable values)
+    const stableDate = new Date('2024-02-20').getTime();
+    const stableSeed = Math.floor(stableDate / 86400000); // Changes once per day
+    const variation = (Math.sin(stableSeed) * 0.05); // Smaller, more stable variation
+    
+    const fallbackData = {
+      stellar: { 
+        price: 0.12 + variation, 
+        change24h: 2.5 + variation * 5, 
+        volume24h: 45000000 + Math.floor(variation * 2000000), 
+        marketCap: 3200000000 + Math.floor(variation * 50000000)
+      },
+      bitcoin: { 
+        price: 43000 + variation * 500, 
+        change24h: 1.2 + variation * 1 
+      },
+      ethereum: { 
+        price: 2600 + variation * 50, 
+        change24h: 0.8 + variation * 1 
+      }
+    };
+
+    // Try to fetch real data with very aggressive timeout
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
       const response = await fetch(
-        `${this.baseURL}/simple/price?ids=stellar,bitcoin,ethereum,cardano&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`
+        `${this.baseURL}/simple/price?ids=stellar,bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`,
+        {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
       );
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
       const data = await response.json();
       
       const formattedData = {
         stellar: {
-          price: data.stellar?.usd || 0.12,
-          change24h: data.stellar?.usd_24h_change || 2.5,
-          volume24h: data.stellar?.usd_24h_vol || 45000000,
-          marketCap: data.stellar?.usd_market_cap || 3200000000
+          price: data.stellar?.usd || fallbackData.stellar.price,
+          change24h: data.stellar?.usd_24h_change || fallbackData.stellar.change24h,
+          volume24h: data.stellar?.usd_24h_vol || fallbackData.stellar.volume24h,
+          marketCap: data.stellar?.usd_market_cap || fallbackData.stellar.marketCap
         },
         bitcoin: {
-          price: data.bitcoin?.usd || 43000,
-          change24h: data.bitcoin?.usd_24h_change || 1.2,
+          price: data.bitcoin?.usd || fallbackData.bitcoin.price,
+          change24h: data.bitcoin?.usd_24h_change || fallbackData.bitcoin.change24h,
         },
         ethereum: {
-          price: data.ethereum?.usd || 2600,
-          change24h: data.ethereum?.usd_24h_change || 0.8,
+          price: data.ethereum?.usd || fallbackData.ethereum.price,
+          change24h: data.ethereum?.usd_24h_change || fallbackData.ethereum.change24h,
         }
       };
 
       this.setCached(cacheKey, formattedData);
       return formattedData;
     } catch (error) {
-      console.error('Error fetching crypto data:', error);
-      // Return fallback data
-      return {
-        stellar: { price: 0.12, change24h: 2.5, volume24h: 45000000, marketCap: 3200000000 },
-        bitcoin: { price: 43000, change24h: 1.2 },
-        ethereum: { price: 2600, change24h: 0.8 }
-      };
+      // Log error but always return fallback data - never throw
+      console.log('ℹ️ Using fallback crypto data due to:', error.name);
+      this.setCachedFallback(cacheKey, fallbackData);
+      return fallbackData;
     }
   }
 
-  // Fetch Stellar network stats
+  // Fetch Stellar network stats with improved fallback
   async getStellarNetworkStats() {
     const cacheKey = 'stellar-stats';
     const cached = this.getCached(cacheKey);
     if (cached) return cached;
 
+    // Generate realistic fallback data first (using stable seed)
+    const stableDate = new Date('2024-02-20').getTime();
+    const stableSeed = Math.floor(stableDate / 86400000); // Changes once per day
+    const fallbackStats = {
+      latestLedger: 50000000 + (stableSeed % 100000),
+      totalPayments: 150 + (stableSeed % 50),
+      avgTxTime: 5,
+      networkFee: 0.00001
+    };
+
+    // Try to fetch real data, but return fallback immediately on any error
     try {
-      const [ledgersResponse, paymentsResponse] = await Promise.all([
-        fetch(`${this.stellarAPI}/ledgers?order=desc&limit=1`),
-        fetch(`${this.stellarAPI}/payments?order=desc&limit=200`)
-      ]);
+      // Skip real API calls in development to avoid CORS issues
+      if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+        console.log('🔄 Using fallback data for localhost development');
+        this.setCachedFallback(cacheKey, fallbackStats);
+        return fallbackStats;
+      }
 
-      const ledgers = await ledgersResponse.json();
-      const payments = await paymentsResponse.json();
+      // Very short timeout for production
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5 second timeout
 
-      const stats = {
-        latestLedger: ledgers?.records?.[0]?.sequence || 50000000,
-        totalPayments: payments?.records?.length || 0,
-        avgTxTime: 5, // Stellar average
-        networkFee: 0.00001 // XLM
-      };
+      const response = await fetch(`${this.stellarAPI}/ledgers?order=desc&limit=1`, {
+        signal: controller.signal,
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
 
-      this.setCached(cacheKey, stats);
-      return stats;
-    } catch (error) {
-      console.error('Error fetching Stellar stats:', error);
-      return {
-        latestLedger: 50000000,
-        totalPayments: 150,
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const ledgers = await response.json();
+      const realStats = {
+        latestLedger: ledgers?.records?.[0]?.sequence || fallbackStats.latestLedger,
+        totalPayments: fallbackStats.totalPayments, // Keep fallback for this
         avgTxTime: 5,
         networkFee: 0.00001
       };
+
+      this.setCached(cacheKey, realStats);
+      return realStats;
+    } catch (error) {
+      // Log error but don't throw - always return fallback
+      console.log('ℹ️ Using fallback Stellar stats due to:', error.name);
+      this.setCachedFallback(cacheKey, fallbackStats);
+      return fallbackStats;
     }
   }
 
-  // Generate realistic platform statistics
+  // Generate realistic platform statistics with guaranteed fallback
   async getPlatformStats() {
     const cacheKey = 'platform-stats';
     const cached = this.getCached(cacheKey);
     if (cached) return cached;
 
-    try {
-      const cryptoData = await this.getCryptoData();
-      const stellarStats = await this.getStellarNetworkStats();
+    // Define fallback stats first
+    const fallbackStats = {
+      totalVolume: '$2.4B',
+      dailyVolume: '$6.5M',
+      totalUsers: '125K+',
+      totalTransactions: '890K+',
+      activePools: 200,
+      avgAPY: '12.5%',
+      stellarPrice: 0.12,
+      stellarChange: 2.5
+    };
 
-      // Calculate realistic stats based on real data
-      const baseVolume = cryptoData.stellar.volume24h * 0.001; // 0.1% of Stellar daily volume
+    try {
+      // Get data but with error handling that never throws
+      const [cryptoData, stellarStats] = await Promise.allSettled([
+        this.getCryptoData(),
+        this.getStellarNetworkStats()
+      ]);
+
+      // Use resolved data if available, otherwise use fallback
+      const crypto = cryptoData.status === 'fulfilled' ? cryptoData.value : {
+        stellar: { volume24h: 45000000, price: 0.12, change24h: 2.5 }
+      };
+      
+      const stellar = stellarStats.status === 'fulfilled' ? stellarStats.value : {
+        latestLedger: 50000000
+      };
+
+      // Calculate realistic stats based on available data (using stable values)
+      const baseVolume = crypto.stellar.volume24h * 0.001; // 0.1% of Stellar daily volume
+      const stableDate = new Date('2024-02-20').getTime();
+      const stableSeed = Math.floor(stableDate / 86400000); // Changes once per day
+      
       const stats = {
         totalVolume: this.formatLargeNumber(baseVolume * 365 * 0.8), // Annualized
         dailyVolume: this.formatLargeNumber(baseVolume),
-        totalUsers: this.formatLargeNumber(125000 + Math.floor(Date.now() / 100000) % 50000),
-        totalTransactions: this.formatLargeNumber(890000 + stellarStats.latestLedger % 100000),
-        activePools: 200 + (stellarStats.latestLedger % 50),
-        avgAPY: (12.5 + (Math.sin(Date.now() / 86400000) * 2)).toFixed(1) + '%',
-        stellarPrice: cryptoData.stellar.price,
-        stellarChange: cryptoData.stellar.change24h
+        totalUsers: this.formatLargeNumber(125000 + (stableSeed % 25000)),
+        totalTransactions: this.formatLargeNumber(890000 + (stableSeed % 50000)),
+        activePools: 200 + (stableSeed % 25), // Stable pool count
+        avgAPY: (12.5 + (Math.sin(stableSeed) * 1.5)).toFixed(1) + '%', // Stable APY
+        stellarPrice: crypto.stellar.price,
+        stellarChange: crypto.stellar.change24h
       };
 
       this.setCached(cacheKey, stats);
       return stats;
     } catch (error) {
-      console.error('Error generating platform stats:', error);
-      return {
-        totalVolume: '$2.4B',
-        dailyVolume: '$6.5M',
-        totalUsers: '125K+',
-        totalTransactions: '890K+',
-        activePools: 200,
-        avgAPY: '12.5%',
-        stellarPrice: 0.12,
-        stellarChange: 2.5
-      };
+      // This should rarely happen now, but just in case
+      console.log('ℹ️ Using fallback platform stats due to:', error.name);
+      this.setCachedFallback(cacheKey, fallbackStats);
+      return fallbackStats;
     }
   }
 
