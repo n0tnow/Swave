@@ -14,7 +14,7 @@ SWAVE is a comprehensive DeFi ecosystem built on Stellar blockchain that combine
 ## 🎥 Demo
 
 - **Live Demo**: [https://swave-defi.vercel.app](https://swave-sigma.vercel.app)
-- **Demo Video**: [YouTube Link]()
+- **Please Check the Demo Video it's updated**: [YouTube Link](https://youtu.be/dLa0PJcDSO8)
 - **Pitch Deck**: [View Presentation](https://www.canva.com/design/DAGrFeEKdSw/0LPL2W6ebiAXS0ZSOouNaQ/edit?utm_content=DAGrFeEKdSw&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
 
 ## ✨ Key Features
