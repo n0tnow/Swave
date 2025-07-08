@@ -3,7 +3,7 @@
 [![Stellar](https://img.shields.io/badge/Stellar-Soroban-blue)](https://stellar.org/)
 [![React](https://img.shields.io/badge/React-18+-61DAFB)](https://reactjs.org/)
 [![Rust](https://img.shields.io/badge/Rust-Smart%20Contracts-orange)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 
 > **Unifying fragmented DeFi services into one intelligent Stellar platform, solving inefficient swaps, poor risk management, and complex UX through AI-powered routing and intuitive design.**
 
